@@ -144,21 +144,41 @@ def test_uv_kurucusu_PATHe_dokunmuyor() -> None:
 
 
 def test_runtime_dizini_ADI_iki_yerde_de_yeni() -> None:
-    """Ölçülen hata: aynı değer İKİ yerde hesaplanıyor.
+    """Olculen hata: ayni deger IKI yerde hesaplaniyor -- IKI KEZ.
 
-    Parametre varsayılanı ``fool-agent``a çevrilmişti, ama parametre
-    bağlanmadığında değeri YENİDEN hesaplayan blok eski adı sabitliyordu --
-    düzeltme sessizce eziliyordu.
-
-    Sonuç: masaüstünün onarımı ``fool-agent`` dururken ``hermes-agent``a
-    klonladı ve iki dizin birden oluştu.
+    1. Parametre varsayilani ``fool-agent``a cevrilmisti, ama parametre
+       baglanmadiginda degeri YENIDEN hesaplayan blok eski adi sabitliyordu
+       -- duzeltme sessizce eziliyordu. Masaustunun onarimi ``fool-agent``
+       dururken ``hermes-agent``a klonladi ve iki dizin birden olustu.
+    2. Ayni turda, IKI hesap yeri de -- parametre varsayilani VE bu
+       yeniden-hesaplama blogu -- ``$FoolHome`` PARAMETRESI yerine ham
+       ``$env:FOOL_HOME`` okuyordu. Izole bir ``-FoolHome`` ile cagrilan
+       bir kurulum (orn. sandbox'li bir "sifirdan kurulum" testi) bu
+       yuzden GERCEK kuruluma cozuluyordu -- parametre sessizce yok
+       sayiliyordu. Duzeltme ara degiskenleri (``$__foolHome``,
+       ``$__ih``) TAMAMEN KALDIRDI: ikisi de artik dogrudan
+       ``$FoolHome``'u okuyor, yani "iki ayri ara degisken senkron
+       kalsin" riski bir daha cikamaz.
     """
     # Iki hesap yeri de yeni adi tercih etmeli.
-    assert INSTALL.count("Join-Path $__foolHome 'fool-agent'") == 1
-    assert INSTALL.count("Join-Path $__ih 'fool-agent'") == 1
+    assert INSTALL.count("Join-Path $FoolHome 'fool-agent'") == 2
 
     # Eski ad yalnizca GERI DUSUS olarak gecmeli -- sabitlenmis olarak degil.
-    assert '"$env:FOOL_HOME\\hermes-agent"' not in INSTALL
+    assert '"$env:FOOL_HOME' + chr(92) + 'hermes-agent"' not in INSTALL
+
+    # Ikisi de $FoolHome PARAMETRESINI okumali, ham ortam degiskenini
+    # degil -- yorum satirlarindaki aciklamalar (ki HATAYI anlatiyor)
+    # yanlis pozitif uretmesin diye yorum DISI kod satirlarina bakiyoruz.
+    i1 = INSTALL.index("[string]$InstallDir = $(")
+    j1 = INSTALL.index("),", i1)
+    i2 = INSTALL.index("$InstallDir = ConvertTo-LongPath $(")
+    j2 = INSTALL.index(chr(41), i2)
+    for i, j in ((i1, j1), (i2, j2)):
+        kod = chr(10).join(
+            l for l in INSTALL[i:j].split(chr(10)) if not l.strip().startswith("#")
+        )
+        assert "$FoolHome" in kod
+        assert "$env:FOOL_HOME" not in kod
 
 
 def test_eski_ad_hala_OKUNUYOR() -> None:

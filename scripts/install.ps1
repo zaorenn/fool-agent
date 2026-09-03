@@ -44,9 +44,24 @@ param(
     # kurulum calismayi surdurmeli. Sira: yeni varsa yeni, yoksa eski varsa
     # eski, hicbiri yoksa yeni.
     [string]$InstallDir = $(
-        $__foolHome = if ($env:FOOL_HOME) { $env:FOOL_HOME } else { "$env:LOCALAPPDATA\fool" }
-        $__new = Join-Path $__foolHome 'fool-agent'
-        $__legacy = Join-Path $__foolHome 'hermes-agent'
+        # BUG (found via a self-run sandboxed fresh-install test): this used
+        # to read $env:FOOL_HOME directly, ignoring the -FoolHome PARAMETER
+        # entirely. PowerShell resolves parameter defaults top-to-bottom, and
+        # $FoolHome is already bound by the time this one evaluates -- so
+        # this must read that, not re-read the raw environment variable a
+        # the caller's -FoolHome was specifically meant to override.
+        #
+        # Consequence measured directly: running this script with
+        # -FoolHome pointed at an isolated scratch directory (to test a
+        # fresh install without touching a real machine) left $InstallDir
+        # resolved to the REAL install anyway, because the real
+        # %LOCALAPPDATA%\fool was still sitting in $env:FOOL_HOME. The
+        # repository stage happened to no-op only because origin already
+        # matched -- a different origin, or a newer upstream commit, would
+        # have updated the real install from inside what was supposed to be
+        # an isolated test.
+        $__new = Join-Path $FoolHome 'fool-agent'
+        $__legacy = Join-Path $FoolHome 'hermes-agent'
         if (Test-Path $__new) { $__new } elseif (Test-Path $__legacy) { $__legacy } else { $__new }
     ),
 
@@ -367,9 +382,8 @@ if ($PSBoundParameters.ContainsKey('InstallDir')) {
     # onarimi ``fool-agent`` dururken ``hermes-agent``a klonladi ve iki dizin
     # birden olustu.
     $InstallDir = ConvertTo-LongPath $(
-        $__ih = if ($env:FOOL_HOME) { $env:FOOL_HOME } else { "$env:LOCALAPPDATA\fool" }
-        $__inew = Join-Path $__ih 'fool-agent'
-        $__ilegacy = Join-Path $__ih 'hermes-agent'
+        $__inew = Join-Path $FoolHome 'fool-agent'
+        $__ilegacy = Join-Path $FoolHome 'hermes-agent'
         if (Test-Path $__inew) { $__inew } elseif (Test-Path $__ilegacy) { $__ilegacy } else { $__inew }
     )
 }
@@ -5324,7 +5338,18 @@ function Remove-DirectoryHard {
 
     # Tier 3: hand it to cmd. `rmdir /s /q` walks the tree with the Win32
     # calls directly and is not bound by the cmdlet's path handling.
-    & $env:ComSpec /d /s /c "rmdir /s /q ""$Path""" 2>&1 | Out-Null
+    #
+    # Measured on the user's laptop: this line alone killed the whole
+    # install. `2>&1` on a native command wraps every stderr line in a
+    # NativeCommandError, and rmdir's own "Access is denied" (emitted for
+    # exactly the kind of locked file this tier exists to route around)
+    # became an uncaught exception under the script's global EAP=Stop --
+    # so the ONE call meant to survive a stuck file was what took the
+    # install down. Wrapped the same way Invoke-NativeWithTimeout already
+    # is, for the same reason.
+    Invoke-NativeWithRelaxedErrorAction {
+        & $env:ComSpec /d /s /c "rmdir /s /q ""$Path""" 2>&1 | Out-Null
+    }
     if (-not (Test-Path -LiteralPath $Path)) { return $true }
 
     # A process asked to exit a moment ago may still be closing its handles.
@@ -5333,10 +5358,16 @@ function Remove-DirectoryHard {
     # Tier 4: mirror an empty directory over it. robocopy speaks the long-path
     # API, so this clears exactly the deep `node_modules` entries the earlier
     # tiers could not address; the emptied shell then removes normally.
+    #
+    # robocopy's own stderr carries the same NativeCommandError risk as the
+    # rmdir above, and the outer try/catch caught the symptom without fixing
+    # the cause -- wrapped for the same reason, not left to the catch block.
     $empty = Join-Path ([IO.Path]::GetTempPath()) ("fool-empty-" + [Guid]::NewGuid().ToString("N"))
     try {
         New-Item -ItemType Directory -Force -Path $empty | Out-Null
-        & robocopy $empty $Path /MIR /NFL /NDL /NJH /NJS /NC /NS /NP 2>&1 | Out-Null
+        Invoke-NativeWithRelaxedErrorAction {
+            & robocopy $empty $Path /MIR /NFL /NDL /NJH /NJS /NC /NS /NP 2>&1 | Out-Null
+        }
         Remove-Item -Recurse -Force -ErrorAction SilentlyContinue -LiteralPath $Path
     } catch { } finally {
         Remove-Item -Recurse -Force -ErrorAction SilentlyContinue -LiteralPath $empty

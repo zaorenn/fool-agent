@@ -3734,6 +3734,22 @@ remove_previous_install() {
         rm -rf "$_p" 2>/dev/null || _failed="$_failed $_p"
     done
 
+    # Debris from an earlier failed run. When the delete above could not
+    # finish, the clone step found a non-empty non-repo directory and renamed
+    # it to `<clone>.broken-<timestamp>` rather than destroying it. That was
+    # the right call at the time, but the copy is a checkout of a public
+    # repository -- no user data has ever lived here -- so a later reinstall
+    # is the moment to clear it. Left alone it accumulates one full copy of
+    # the tree per failed attempt.
+    #
+    # Ported from Get-FoolProgramPaths (install.ps1) -- that side gained this
+    # scan first and bash did not follow, the recurring gap in this repo
+    # where a lesson learned in one script does not reach its sibling.
+    for _p in "$_root"/fool-agent.broken-* "$_root"/hermes-agent.broken-*; do
+        [ -e "$_p" ] || continue
+        rm -rf "$_p" 2>/dev/null || _failed="$_failed $_p"
+    done
+
     if [ "${PURGE_USER_DATA:-false}" = true ]; then
         if rm -rf "$_root" 2>/dev/null; then
             log_success "Previous installation and all user data removed"

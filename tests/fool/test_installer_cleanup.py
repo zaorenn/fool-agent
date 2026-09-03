@@ -533,3 +533,147 @@ class TestOluPATHGirdileri_TEMIZLENIYOR:
         # Yazilip cagrilmamasi sessiz bir no-op olurdu.
         assert "Remove-FoolPathEntries -Root $Root" in PS1
 
+
+class TestRemoveDirectoryHard_NATIVE_CAGRI_GUVENLI:
+    """Tier 3/4 native cagrilari, kilitli dosyalarda script'i DUSURMEMELI.
+
+    Olculen hata (kullanicinin GERCEK laptopunda): install.ps1'in EN
+    BASINDA ``$ErrorActionPreference = "Stop"`` var. PowerShell 5.1'de bir
+    native komutun stderr'ini ``2>&1`` ile birlestirmek her satiri
+    NativeCommandError'a sarar -- ve EAP=Stop altinda bu bir ISTISNA
+    FIRLATIR, komutun kendi exit kodu 0 olsa bile.
+
+    Tier 3'teki ``rmdir /s /q`` cagrisi TAM BOYLE yaziliydi: try/catch
+    DISINDA, cikilan RelaxedErrorAction sarmalayicisi OLMADAN. Kilitli bir
+    dosyada (``venv/Scripts/python.exe`` -- baska bir surecin actigi)
+    rmdir'in kendi "Access is denied" stderr satiri istisna oldu ve TUM
+    KURULUMU dusurdu -- oysa bu TAM OLARAK Tier 3'un var olma sebebiydi:
+    kilitli bir dosyada Tier 1/2 basarisiz olunca DEVAM ETMEK.
+
+    Ders BASKA yerde zaten yaziliydi (Invoke-NativeWithTimeout,
+    Repair-OriginRemote hep bu sarmalayiciyi kullaniyor) ama
+    Remove-DirectoryHard'a TASINMAMISTI -- bu depoda tekrar eden desen.
+    """
+
+    def _blok(self):
+        return PS1.split("function Remove-DirectoryHard")[1].split(chr(10) + "function ")[0]
+
+    def test_rmdir_cagrisi_sarmalanmis(self):
+        # rmdir cagrisinin HEMEN BIR ONCEKI dolu satiri sarmalayicinin
+        # acilisi olmali -- yorumlarin arada olmasi onemli degil, satirlar
+        # arasindaki EN YAKIN kod satirina bakiyoruz.
+        satirlar = [l for l in self._blok().split(chr(10)) if l.strip()]
+        # "rmdir /s /q" bir de ACIKLAYICI YORUM satirinda geciyor --
+        # KODU hedeflemek icin "&" ile baslayan cagri satirini ariyoruz.
+        idx = next(
+            i for i, l in enumerate(satirlar)
+            if "rmdir /s /q" in l and l.strip().startswith("&")
+        )
+
+        onceki_dolu = satirlar[idx - 1]
+        assert "Invoke-NativeWithRelaxedErrorAction" in onceki_dolu, onceki_dolu
+
+    def test_robocopy_cagrisi_sarmalanmis(self):
+        satirlar = [l for l in self._blok().split(chr(10)) if l.strip()]
+        idx = next(i for i, l in enumerate(satirlar) if "& robocopy" in l)
+
+        onceki_dolu = satirlar[idx - 1]
+        assert "Invoke-NativeWithRelaxedErrorAction" in onceki_dolu, onceki_dolu
+
+    def test_global_EAP_STOP_ile_davranis_GERCEKTEN_dogru(self):
+        """Metin kontrolu yetmez -- DAVRANIS gercek PowerShell'de sinanir.
+
+        EAP=Stop altinda, stderr'e yazan bir native komutun 2>&1 ile
+        alinmasi, sarmalayici OLMADAN istisna firlatmali (hata burada
+        BUYDU); sarmalayiciYLA istisna firlatmamali.
+        """
+        import shutil
+        import subprocess
+
+        pwsh = shutil.which("powershell") or shutil.which("pwsh")
+        if not pwsh:
+            pytest.skip("PowerShell bu makinede yok")
+
+        script = (
+            "$ErrorActionPreference = 'Stop'; "
+            "function Invoke-NativeWithRelaxedErrorAction { "
+            "param([scriptblock]$Script) "
+            "$p = $ErrorActionPreference; $ErrorActionPreference = 'Continue'; "
+            "try { & $Script } finally { $ErrorActionPreference = $p } }; "
+            "$ciplak = $true; "
+            "try { & $env:ComSpec /d /s /c 'type yok-boyle-bir-dosya-xyz.txt' 2>&1 | Out-Null } "
+            "catch { $ciplak = $false }; "
+            "$sarmali = $true; "
+            "try { Invoke-NativeWithRelaxedErrorAction { "
+            "& $env:ComSpec /d /s /c 'type yok-boyle-bir-dosya-xyz.txt' 2>&1 | Out-Null } } "
+            "catch { $sarmali = $false }; "
+            "Write-Output \"$ciplak,$sarmali\""
+        )
+        out = subprocess.run(
+            [pwsh, "-NoProfile", "-Command", script],
+            capture_output=True, text=True, timeout=30,
+        ).stdout.strip()
+
+        assert out == "False,True", (
+            f"beklenen 'ciplak cagri istisna firlatir, sarmali firlatmaz' -- alinan: {out!r}"
+        )
+
+
+class TestBashDebrisTemizligi_PS1_ILE_ESLESIYOR:
+    """install.sh, install.ps1'in ".broken-*" debris taramasini da tasimali.
+
+    Olculen bosluk: Get-FoolProgramPaths (PS1) glob ile ".broken-*"
+    dizinlerini tarayip siliyordu, ama install.sh'nin karsilik gelen
+    dongusune bu HIC TASINMAMISTI -- depoda tekrar eden desen (bir
+    betikte ogrenilen ders kardesine gecmiyor).
+    """
+
+    def test_sh_broken_debris_taraniyor(self):
+        blok = SH.split("remove_previous_install() {")[1].split(chr(10) + "}")[0]
+
+        assert "fool-agent.broken-" in blok
+        assert "hermes-agent.broken-" in blok
+
+    def test_sh_debris_silme_set_e_ALTINDA_GUVENLI(self):
+        # `rm -rf ... || _failed=...` -- set -e altinda bile basarisizlik
+        # scripti dusurmemeli, sadece $_failed listesine eklenmeli.
+        blok = SH.split("remove_previous_install() {")[1].split(chr(10) + "}")[0]
+        debris_blogu = blok.split("fool-agent.broken-")[1]
+
+        assert "|| _failed=" in debris_blogu
+
+
+class TestInstallDir_FoolHome_PARAMETRESINE_SAYGI_DUYUYOR:
+    """``$InstallDir`` varsayilani, ``-FoolHome`` PARAMETRESINE bagli olmali.
+
+    Olculen hata: varsayilan ifade ``$env:FOOL_HOME`` (kalici, GERCEK
+    ortam degiskeni) OKUYORDU, ``-FoolHome`` PARAMETRESINI degil. Sonuc:
+    yazarin kendi izole "sifirdan kurulum" sandbox testinde
+    ``-FoolHome <TEMP altinda bir yol>`` verilmesine RAGMEN, InstallDir
+    GERCEK kurulu klona (%LOCALAPPDATA%/fool/fool-agent) cozuldu --
+    "repository" asamasi origin ZATEN dogru oldugu icin sans eseri
+    zarar vermedi, ama farkli bir origin ya da daha yeni bir upstream
+    commit'i GERCEK kurulumu izole bir testin ICINDEN guncellemis olurdu.
+
+    Ayni sinif tehlike (sandbox'in PATH/FOOL_HOME'a kalici yazmamasi
+    icin dosyanin BASKA bir yerinde -- "isSandboxHome" tespiti -- ozel
+    bir koruma VAR; InstallDir bu korumanin DISINDA kalmisti).
+    """
+
+    def test_installdir_FoolHome_degiskenini_okuyor(self):
+        i = PS1.index("[string]$InstallDir = $(")
+        j = PS1.index("),", i)
+        # Yorumlari at; iddia KODA bakmali (yorumlarda aciklama amacli
+        # "$env:FOOL_HOME" gecmesi -- ki bu yorumlar tam da HATAYI
+        # anlatiyor -- yanlis pozitif uretmemeli.
+        kod_satirlari = [
+            l for l in PS1[i:j].split(chr(10))
+            if not l.strip().startswith("#")
+        ]
+        blok = chr(10).join(kod_satirlari)
+
+        assert "$FoolHome" in blok
+        assert "$env:FOOL_HOME" not in blok, (
+            "InstallDir hala ham ortam degiskenini okuyor -- "
+            "-FoolHome parametresi yok sayilir"
+        )
