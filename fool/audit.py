@@ -85,7 +85,14 @@ SURFACES: tuple[tuple[str, tuple[str, ...]], ...] = (
 #: ``HERMES_DESKTOP_APP_NAME``), metinde ise boşluk/tırnakla çevrilidir
 #: (``'Hermes update'``). Sınır olmadan tarayıcı yüzlerce sembol adını
 #: metin sanıyordu.
-_BRAND = re.compile(r"\b(Hermes|HERMES|Nous Research)\b")
+# "Nous Research" ARTIK SIZINTI DEGIL.
+#
+# Hermes bir urun adi ve onu catalladik; kalintisi gercek bir bulgu.
+# Nous Research ise bir SIRKET: Portal onun, karti o cekiyor, Hermes
+# 3/4 modelleri onun. Adini gizlemek metni yanlis yapiyordu -- en
+# agiri odeme onay ekraniydi. Artik bilerek adiyla aniliyor, yani
+# burada aranmasi yanlis pozitif uretir (bkz. fool/branding.py _RULES).
+_BRAND = re.compile(r"\b(Hermes|HERMES)\b")
 
 #: Kullaniciya YAZDIRILAN komut: ``hermes`` ardindan bir alt komut.
 #: Tanimlayicilardan ayirt eden sey BOSLUK -- ``hermes_cli`` ve
@@ -155,7 +162,22 @@ def scan() -> list[Finding]:
             # yanlis pozitif uretiyor ve gercek bulgular arasinda kayboluyordu.
             in_docstring = False
 
+            in_block_comment = False
             for i, raw in enumerate(text.splitlines(), 1):
+                # PowerShell blok yorumu: <# ... #>. Icerideki satirlar
+                # "#" ile BASLAMIYOR, yani _COMMENT onlari yakalamiyordu
+                # ve kurulum betigindeki cok satirli aciklamalar sahte
+                # bulgu uretiyordu. Python docstring gibi ele alinmali:
+                # ikisi de calistirilmayan, kullaniciya gorunmeyen metin.
+                if in_block_comment:
+                    if "#>" in raw:
+                        in_block_comment = False
+                    continue
+                if raw.lstrip().startswith("<#"):
+                    if "#>" not in raw:
+                        in_block_comment = True
+                    continue
+
                 fences = raw.count('\"\"\"') + raw.count("'''")
 
                 if in_docstring:

@@ -377,7 +377,7 @@ COMMAND_REGISTRY: list[CommandDef] = [
     #
     # /subscription ve /topup kaldirildi. Bunlar Nous Portal hesabina ozel
     # faturalama komutlariydi; The Fool boyle bir hesap iliskisi tasimiyor.
-    # Markalama gecidinden gectiklerinde "View your Fool Labs plan" gibi
+    # Markalama gecidinden gectiklerinde "View your Nous Research plan" gibi
     # DOGRU OLMAYAN metinler uretiyorlardi -- var olmayan bir plani vaat eden
     # bir komut, olmayan bir komuttan daha kotudur.
     #

@@ -5870,7 +5870,7 @@ def _refresh_access_token(
             "custom self-heal hook, or another The Fool install sharing "
             "~/.hermes/auth.json) called POST /api/oauth/token with Hermes's "
             "refresh token without persisting the rotated token back.\n"
-            "Fool Labs refresh tokens are single-use — only The Fool may call the "
+            "Nous Research refresh tokens are single-use — only The Fool may call the "
             "refresh endpoint. For health checks, use `fool auth status` "
             "instead.\n"
             "Re-authenticate with: fool auth add nous"
@@ -5987,7 +5987,7 @@ def resolve_nous_access_token(
 
         if not state:
             raise AuthError(
-                "The Fool is not logged into Fool Labs Portal.",
+                "The Fool is not logged into Nous Research Portal.",
                 provider="nous",
                 relogin_required=True,
             )
@@ -6332,7 +6332,7 @@ def resolve_nous_runtime_credentials(
     ):
 
         if not state:
-            raise AuthError("The Fool is not logged into Fool Labs Portal.",
+            raise AuthError("The Fool is not logged into Nous Research Portal.",
                             provider="nous", relogin_required=True)
 
         persisted_state = dict(state)

@@ -209,7 +209,7 @@ def format_nous_portal_entitlement_message(
 
     if account_info is None:
         return (
-            f"The Fool could not verify your Fool Labs Portal entitlement, so {capability} "
+            f"The Fool could not verify your Nous Research Portal entitlement, so {capability} "
             f"is unavailable. Run `fool model` to refresh your login, or check "
             f"billing at {billing_url}."
         )
@@ -217,7 +217,7 @@ def format_nous_portal_entitlement_message(
     if not account_info.logged_in:
         if account_info.inference_credential_present:
             return (
-                f"Fool Labs inference credentials are configured, but The Fool cannot verify "
+                f"Nous Research inference credentials are configured, but The Fool cannot verify "
                 f"your Nous Portal paid access for {capability}. Log in with "
                 f"`fool model` to enable Portal-managed features. Billing and "
                 f"credits are managed at {billing_url}."
@@ -229,7 +229,7 @@ def format_nous_portal_entitlement_message(
 
     if account_info.paid_service_access is None:
         detail = (
-            f"The Fool could not verify your Fool Labs Portal paid access, so {capability} "
+            f"The Fool could not verify your Nous Research Portal paid access, so {capability} "
             f"is unavailable."
         )
         if account_info.error:
@@ -243,7 +243,7 @@ def format_nous_portal_entitlement_message(
     reason = access.reason if access else None
     if reason == "account_missing":
         return (
-            f"The Fool could not find a Fool Labs Portal account or organisation for this "
+            f"The Fool could not find a Nous Research Portal account or organisation for this "
             f"login, so {capability} is unavailable. Run `fool model` to "
             f"authenticate again; if the problem persists, contact Nous support."
         )

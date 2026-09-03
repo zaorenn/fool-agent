@@ -1,7 +1,7 @@
 name: fool-qwen3
 version: 1.0.0
 description: "Qwen3-TTS (Alibaba, Apache-2.0) — tek modelde 10 dil ve 9 konuşmacı. Türkçe desteklenmiyor. Kendi izole ortamında çalışır: transformers==4.57.3 ana ortamdaki huggingface-hub'ı kırardı."
-author: Fool Labs
+author: zaorenn
 kind: backend
 provides_tts_providers:
   - qwen3

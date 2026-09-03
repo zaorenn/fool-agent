@@ -32,8 +32,12 @@ export const BRAND = {
    * "The Fool" / "Fool Agent" ayrımının karşılığı.
    */
   agent: 'Fool Agent',
-  /** "Fool Labs" yerine geçen üretici adı. */
-  vendor: 'Fool Labs',
+  /**
+   * Projenin KENDİ üretici/yazar adı. Eskiden "Nous Research"ün
+   * yerine geçen ad buydu; o değiştirme kaldırıldı -- gerekçesi
+   * aşağıdaki RULES listesinde.
+   */
+  vendor: 'zaorenn',
   /** Terminal komutu — pyproject `[project.scripts]` ile eşleşmeli. */
   cli: 'fool',
   /** Veri dizini adı — `~/.fool`. Python tarafıyla eşleşmeli. */
@@ -63,8 +67,13 @@ const RULES: ReadonlyArray<readonly [RegExp, string]> = [
   // "Fool Agent" -> "Fool Agent": ajanın tam adı. Açılış logotype'ı bu
   // kuraldan GEÇMEZ, doğrudan BRAND.wordmark'tan geliyor (intro.tsx).
   [/\bHermes\s+Agent\b/g, BRAND.agent],
-  [/\bNous\s+Research\b/g, BRAND.vendor],
-  [/\bNous\b/g, BRAND.vendor],
+  // "Nous Research" İÇİN KURAL YOK -- bilerek.
+  //
+  // Hermes'i yeniden adlandırmak meşru: çatalladığımız ürün o.
+  // Nous Research ise çatallanan bir şey değil, gerçek bir şirket --
+  // Portal onun, kartı o çekiyor, Hermes 3/4 modelleri onun. Adını
+  // değiştirmek metni YANLIŞ yapıyordu. Python tarafındaki _RULES
+  // ile birebir aynı tutulmalı.
   [/\bHERMES\b/g, BRAND.wordmark],
   [/\bHermes\b/g, BRAND.name],
   [/\bhermes\b/g, BRAND.cli]

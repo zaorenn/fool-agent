@@ -38,7 +38,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
         ("Update Hermes", "Update The Fool"),
         ("Update Hermes Agent", "Update Fool Agent"),
         ("You are Hermes Agent", "You are Fool Agent"),
-        ("Nous Research", "Fool Labs"),
+        # Nous Research gercek bir sirket, catalladigimiz bir urun degil:
+        # adi oldugu gibi kalmali (bkz. fool/branding.py _RULES notu).
+        ("Nous Research", "Nous Research"),
         ("Hermes couldn't start", "The Fool couldn't start"),
         ("edit ~/.hermes/.env", "edit ~/.fool/.env"),
         ("run: fool update", "run: fool update"),
@@ -105,7 +107,7 @@ def test_brand_value_walks_nested_structures() -> None:
     out = branding.brand_value(payload)
     assert out["title"] == "The Fool"
     assert out["items"][0] == "Start The Fool"
-    assert out["items"][1]["deep"] == "Fool Labs"
+    assert out["items"][1]["deep"] == "Nous Research"
     # String olmayanlar olduğu gibi geçmeli.
     assert out["count"] == 3
     assert out["flag"] is True
@@ -932,7 +934,7 @@ class TestSkillBodyBranding:
         out = branding.brand_skill_body(
             "Hermes Agent is an open-source AI agent framework by Nous Research."
         )
-        assert out == "Fool Agent is an open-source AI agent framework by Fool Labs."
+        assert out == "Fool Agent is an open-source AI agent framework by Nous Research."
 
     def test_cagrilabilir_beceri_kimligi_korunur(self):
         """``hermes-agent`` bir ADdir; markalanirsa skill_view yanlis cagrilir."""
@@ -987,7 +989,7 @@ class TestSkillBodyBranding:
         assert skill_md.exists(), f"test dayanagi kayboldu: {skill_md}"
 
         raw = skill_md.read_text(encoding="utf-8-sig", errors="replace")
-        assert _re.search(r"\b(Hermes|Nous Research)\b", raw), (
+        assert _re.search(r"\bHermes\b", raw), (
             "kaynak dosya artik marka tasimiyor; bu test anlamini yitirdi"
         )
 
@@ -995,7 +997,9 @@ class TestSkillBodyBranding:
         leaks = [
             line
             for line in out.split(chr(10))
-            if _re.search(r"\b(Hermes|Nous Research)\b", line)
+            # "Nous Research" ARTIK SIZINTI DEGIL: gercek bir sirket ve
+            # adi bilerek korunuyor (fool/branding.py _RULES notu).
+            if _re.search(r"\bHermes\b", line)
             and "NousResearch/hermes-agent" not in line
         ]
         assert not leaks, f"markasiz satirlar: {leaks[:5]}"

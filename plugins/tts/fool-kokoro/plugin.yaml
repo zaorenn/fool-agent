@@ -1,7 +1,7 @@
 name: fool-kokoro
 version: 1.0.0
 description: "Kokoro (hexgrad, Apache-2.0) — 82M parametre, ~350 MB. Piper'dan belirgin biçimde iyi tonlama, CPU'da kullanılabilir hızda. Kendi izole ortamında çalışır: ana ortamda tokenizers'ı düşürüp faster-whisper'ı etkilerdi."
-author: Fool Labs
+author: zaorenn
 kind: backend
 provides_tts_providers:
   - kokoro

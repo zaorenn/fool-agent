@@ -4,7 +4,7 @@
   "private": true,
   "version": "0.21.13",
   "description": "Native desktop shell for The Fool.",
-  "author": "Fool Labs",
+  "author": "zaorenn",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -296,7 +296,7 @@
     },
     "linux": {
       "category": "Development",
-      "maintainer": "Fool Labs",
+      "maintainer": "zaorenn",
       "synopsis": "Native desktop shell for The Fool.",
       "target": [
         "AppImage",

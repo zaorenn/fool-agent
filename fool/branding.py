@@ -94,9 +94,13 @@ DESKTOP: Final[str] = "The Fool Desktop"
 
 AGENT: Final[str] = "Fool Agent"
 
-#: "Nous Research" yerine geçen üretici adı.
+#: Projenin KENDI üretici/yazar adı. Eskiden "Nous Research"ün
 
-VENDOR: Final[str] = "Fool Labs"
+#: yerine geçen ad buydu; o değiştirme kaldırıldı -- gerekçesi
+
+#: aşağıdaki kural listesinde.
+
+VENDOR: Final[str] = "zaorenn"
 
 #: Terminal komutu — pyproject ``[project.scripts]`` ile eşleşmeli.
 
@@ -152,9 +156,21 @@ _RULES: Final[tuple[tuple[re.Pattern[str], str], ...]] = (
 
     (re.compile(r"\bHermes\s+Agent\b"), AGENT),
 
-    (re.compile(r"\bNous\s+Research\b"), VENDOR),
+    # "Nous Research" ICIN KURAL YOK -- bilerek.
 
-    (re.compile(r"\bNous\b"), VENDOR),
+    #
+
+    # Hermes'i yeniden adlandirmak mesru: catalladigimiz urun o ve
+
+    # artik The Fool. Nous Research ise catallanan bir sey degil, gercek
+
+    # bir sirket -- Portal onun, karti o cekiyor, Hermes 3/4 modelleri
+
+    # onun. Adini degistirmek metni YANLIS yapiyordu. En agiri odeme
+
+    # onay ekraniydi: "By confirming, you allow <biz> to charge your
+
+    # card" -- parayi ceken taraf biz degiliz.
 
     (re.compile(r"\bHERMES\b"), WORDMARK),
 

@@ -228,9 +228,9 @@ print_banner() {
     echo ""
     echo -e "${MAGENTA}${BOLD}"
     echo "┌─────────────────────────────────────────────────────────┐"
-    echo "│             ⚕ The Fool Installer                    │"
+    echo "│             ⚕ The Fool Installer                        │"
     echo "├─────────────────────────────────────────────────────────┤"
-    echo "│  An open source AI agent by Fool Labs.                    │"
+    echo "│  An open source AI agent by zaorenn.                    │"
     echo "└─────────────────────────────────────────────────────────┘"
     echo -e "${NC}"
 }
@@ -1297,6 +1297,11 @@ clone_repo() {
 
     if [ -d "$INSTALL_DIR" ]; then
         if [ -d "$INSTALL_DIR/.git" ]; then
+            # Before anything else: make sure this clone follows THIS
+            # repository. An install made from the old one would otherwise
+            # "update" against it forever.
+            repair_origin_remote "$INSTALL_DIR" "$BRANCH" || true
+
             log_info "Existing installation found, updating..."
             cd "$INSTALL_DIR"
 
@@ -2027,11 +2032,9 @@ copy_config_templates() {
     configure_browser_env_from_system_browser
 
     # Create config.yaml at ~/.hermes/config.yaml (top level, easy to find)
-    config_is_new=false
     if [ ! -f "$FOOL_HOME/config.yaml" ]; then
         if [ -f "$INSTALL_DIR/cli-config.yaml.example" ]; then
             cp "$INSTALL_DIR/cli-config.yaml.example" "$FOOL_HOME/config.yaml"
-            config_is_new=true
             log_success "Created ~/.fool/config.yaml from template"
         fi
     else
@@ -2044,8 +2047,8 @@ copy_config_templates() {
     # machine ran on upstream's palette while the banner underneath was
     # already crimson.
     #
-    # Applied only when THIS run created config.yaml: an existing config may
-    # carry a skin the user picked, and overwriting that takes a choice away.
+    # Rewrites only the value `default` -- upstream's never-chosen fallback --
+    # so a skin the user actually picked is left alone.
     if [ -f "$INSTALL_DIR/fool/skins/the-fool.yaml" ]; then
         mkdir -p "$FOOL_HOME/skins"
         cp "$INSTALL_DIR/fool/skins/the-fool.yaml" "$FOOL_HOME/skins/the-fool.yaml"
@@ -2054,10 +2057,10 @@ copy_config_templates() {
     # The template already ships `display:` with `skin: default`; appending a
     # second `display:` block would duplicate a YAML key, and skipping when a
     # skin line exists made this a silent no-op. Rewrite the existing value.
-    if [ "$config_is_new" = true ] && [ -f "$FOOL_HOME/config.yaml" ]; then
+    if [ -f "$FOOL_HOME/config.yaml" ]; then
         if grep -qE '^[[:space:]]*skin:[[:space:]]*default[[:space:]]*$' "$FOOL_HOME/config.yaml"; then
             _cfg_tmp="$FOOL_HOME/config.yaml.skin.tmp"
-            if sed 's/^\([[:space:]]*\)skin:[[:space:]]*default[[:space:]]*$/skin: the-fool/'                     "$FOOL_HOME/config.yaml" > "$_cfg_tmp"; then
+            if sed 's/^\([[:space:]]*\)skin:[[:space:]]*default[[:space:]]*$/\1skin: the-fool/' "$FOOL_HOME/config.yaml" > "$_cfg_tmp"; then
                 mv "$_cfg_tmp" "$FOOL_HOME/config.yaml"
                 log_success "Applied The Fool skin"
             else
@@ -3626,6 +3629,95 @@ stop_fool_processes() {
     sleep 1
 }
 
+repair_origin_remote() {
+    # Point an older install at the repository this script belongs to.
+    #
+    # Nothing here ever rewrote `origin`. An install created from the
+    # previous repository therefore kept fetching from it forever: the
+    # update step ran, reported success, and delivered nothing new.
+    #
+    # A plain pull cannot cross this gap. The current repository was
+    # published as a fresh single-commit history, so it shares no ancestor
+    # with the old one and `git pull` stops at "refusing to merge unrelated
+    # histories". Fetch the new ref and reset onto it instead.
+    #
+    # The reset is safe because this directory is program only: sessions,
+    # agents, memories, downloaded models and cloned voices all live in
+    # FOOL_HOME BESIDE this clone. And `reset --hard` rewrites tracked files
+    # only, so the untracked venv and node_modules in here survive.
+    _dir="$1"
+    _branch="$2"
+
+    _cur=$(git -C "$_dir" remote get-url origin 2>/dev/null) || return 1
+    [ -n "$_cur" ] || return 1
+
+    _norm=${_cur%.git}
+    _norm=${_norm#https://}
+    _norm=${_norm#git@github.com:}
+    _norm=${_norm#github.com/}
+
+    [ "$_norm" = "zaorenn/fool-agent" ] && return 1
+
+    # Only a PREVIOUS NAME OF THIS PROJECT is migrated -- never an arbitrary
+    # non-official remote. Running from a fork is supported on purpose
+    # (see _is_fork in fool_cli/update_cmd.py); rewriting someone's own fork
+    # would silently throw out their work.
+    [ "$_norm" = "zaorenn/thefool-desktop" ] || return 1
+
+    log_info "This install still points at $_cur"
+    log_info "Moving it to the current repository..."
+
+    git -C "$_dir" remote set-url origin "$REPO_URL_HTTPS" 2>/dev/null || return 1
+    if ! git -C "$_dir" fetch --depth 1 origin "$_branch" >/dev/null 2>&1; then
+        log_warn "Could not fetch from the current repository; keeping the old remote"
+        git -C "$_dir" remote set-url origin "$_cur" 2>/dev/null
+        return 1
+    fi
+    if ! git -C "$_dir" reset --hard FETCH_HEAD >/dev/null 2>&1; then
+        log_warn "Could not switch this install to the current repository"
+        return 1
+    fi
+
+    log_success "This install now updates from $REPO_URL_HTTPS"
+    return 0
+}
+
+remove_legacy_roots() {
+    # Clear data directories left by the pre-rename installs.
+    #
+    # An intermediate build used ~/.thefool before FOOL_HOME settled on
+    # ~/.fool. remove_previous_install only ever looks inside the CURRENT
+    # root, so that older root survived every reinstall.
+    #
+    # ~/.hermes IS DELIBERATELY NOT LISTED: that is where upstream Hermes
+    # Agent installs itself and the README promises not to touch it. A
+    # machine can genuinely carry both, and ownership cannot be proven from
+    # the directory alone. Removing it stays a manual decision.
+    #
+    # Only PROGRAM directories are removed. The root itself goes only when
+    # nothing is left in it: someone who ran an older build for months has
+    # real sessions there.
+    _cur="$1"
+
+    for _legacy in "$HOME/.thefool"; do
+        [ -d "$_legacy" ] || continue
+        [ "$_legacy" = "$_cur" ] && continue
+
+        for _p in "$_legacy/fool-agent" "$_legacy/hermes-agent" "$_legacy/bin"                   "$_legacy/cache" "$_legacy/bootstrap-cache"                   "$_legacy/web-ui-build-stamp.json"; do
+            [ -e "$_p" ] && rm -rf "$_p" 2>/dev/null
+        done
+
+        _left=$(find "$_legacy" -type f 2>/dev/null | wc -l)
+        if [ "$_left" -eq 0 ]; then
+            if rm -rf "$_legacy" 2>/dev/null; then
+                log_success "Removed the old install root $_legacy"
+            fi
+        else
+            log_info "Kept $_legacy -- it still holds $_left of your files"
+        fi
+    done
+}
+
 remove_previous_install() {
     _root="$1"
 
@@ -3657,6 +3749,8 @@ remove_previous_install() {
     else
         log_success "Previous installation removed"
     fi
+
+    remove_legacy_roots "$_root"
 
     log_info "Kept your data: sessions, memory, config, voices. Use --purge-user-data to remove those too."
 }

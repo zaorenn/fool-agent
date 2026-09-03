@@ -480,9 +480,9 @@ function Get-WindowsArch {
 function Write-Banner {
     Write-Host ""
     Write-Host "+---------------------------------------------------------+" -ForegroundColor Magenta
-    Write-Host "|             * The Fool Installer                    |" -ForegroundColor Magenta
+    Write-Host "|             * The Fool Installer                        |" -ForegroundColor Magenta
     Write-Host "+---------------------------------------------------------+" -ForegroundColor Magenta
-    Write-Host "|  An open source AI agent by Fool Labs.                    |" -ForegroundColor Magenta
+    Write-Host "|  An open source AI agent by zaorenn.                    |" -ForegroundColor Magenta
     Write-Host "+---------------------------------------------------------+" -ForegroundColor Magenta
     Write-Host ""
 }
@@ -2076,6 +2076,11 @@ function Install-Repository {
         }
 
         if ($repoValid) {
+            # Before anything else: make sure this clone follows THIS
+            # repository. An install made from the old one would otherwise
+            # "update" against it forever.
+            [void](Repair-OriginRemote -RepoDir $InstallDir -Branch $Branch)
+
             Write-Info "Existing installation found, updating..."
             Push-Location $InstallDir
             # Wrap the entire fetch+checkout block in EAP=Continue so git's
@@ -3296,12 +3301,10 @@ function Copy-ConfigTemplates {
     
     # Create config.yaml
     $configPath = "$FoolHome\config.yaml"
-    $configIsNew = $false
     if (-not (Test-Path $configPath)) {
         $examplePath = "$InstallDir\cli-config.yaml.example"
         if (Test-Path $examplePath) {
             Copy-Item $examplePath $configPath
-            $configIsNew = $true
             Write-Success "Created $configPath from template"
         }
     } else {
@@ -3324,7 +3327,7 @@ function Copy-ConfigTemplates {
         if (-not (Test-Path $skinDir)) {
             New-Item -ItemType Directory -Force -Path $skinDir | Out-Null
         }
-        Copy-Item $skinSource "$skinDir	he-fool.yaml" -Force
+        Copy-Item $skinSource "$skinDir\the-fool.yaml" -Force
     }
 
     # The template already ships `display:` with `skin: default`, so APPENDING
@@ -3332,7 +3335,14 @@ function Copy-ConfigTemplates {
     # skipping when a skin line exists (the first attempt) made this a silent
     # no-op, which is how the skin failed to reach a clean machine in the
     # first place. Rewrite the value that is already there.
-    if ($configIsNew -and (Test-Path $configPath)) {
+    #
+    # This runs on EXISTING configs too. Gating it on "this run created the
+    # config" was meant to protect a skin the user picked, but it protected
+    # nothing: the only value rewritten is `default`, which is upstream's
+    # never-chosen fallback. A user who picked `nord` keeps `nord` -- the
+    # pattern does not match it. Gating instead meant every machine that had
+    # ever installed before stayed on upstream's amber palette forever.
+    if (Test-Path $configPath) {
         $configText = Get-Content -Raw -LiteralPath $configPath
         $updated = [regex]::Replace(
             $configText, '(?m)^(\s*)skin:\s*default\s*$', '${1}skin: the-fool')
@@ -3489,6 +3499,19 @@ function Install-NodeDeps {
         $cmdLine = "/d /s /c "" ""$exePath"" $argLine > ""$logPath"" 2>&1 """
         $proc = Start-Process -FilePath $env:ComSpec -ArgumentList $cmdLine `
             -WorkingDirectory $workDir -NoNewWindow -PassThru
+
+        # Cache the process handle NOW, while the process is still alive.
+        #
+        # .NET reads ExitCode through the process handle. Nothing here holds
+        # that handle, so Windows releases it the moment the process exits and
+        # the field is left permanently unreadable -- $null, not a number.
+        # Waiting does not help: measured on this machine, `cmd /c exit 7`
+        # reports ExitCode [] after WaitForExit() without this line and 7 with
+        # it. Touching .Handle makes the Process object keep its own reference.
+        #
+        # The symptom was a successful npm install (its debug log ended
+        # `verbose exit 0 / info ok`) reported to the user as a failure.
+        $null = $proc.Handle
         $deadline = [DateTime]::UtcNow.AddSeconds($timeoutSec)
         $shown = 0
         function _Drain-NewLines([string]$path, [ref]$count) {
@@ -3510,24 +3533,11 @@ function Install-NodeDeps {
         }
         _Drain-NewLines $logPath ([ref]$shown)
 
-        # WaitForExit BEFORE reading ExitCode.
-        #
-        # Measured on a clean Windows 11 install: npm finished successfully
-        # (its own debug log ended `verbose exit 0 / info ok`) but this
-        # function returned an EMPTY value, so the caller printed
-        # "npm install failed -- exit code " with nothing after it and told
-        # the user to re-run npm by hand.
-        #
-        # `Start-Process -PassThru` hands back a Process object whose
-        # ExitCode is not populated just because HasExited flipped true;
-        # the object has to be waited on (or refreshed) first. HasExited is
-        # already true here, so this returns immediately -- it exists to
-        # populate the field, not to wait.
+        # Flush any output still in flight, then read the code. With the
+        # handle cached above this is readable; the guard stays because a
+        # blank code must never be mistaken for success.
         $proc.WaitForExit()
 
-        # A still-null ExitCode would compare unequal to 0 and be reported as
-        # a failure with a blank code -- exactly the bug above. Treat an
-        # unreadable code as a real failure, but with a number that says so.
         if ($null -eq $proc.ExitCode) { return 125 }
 
         return $proc.ExitCode
@@ -3866,6 +3876,17 @@ function Install-CuaDriver {
         if (Wait-Job $job -Timeout 660) {
             Receive-Job $job -ErrorAction SilentlyContinue | Out-Null
             Remove-Job $job -Force -ErrorAction SilentlyContinue
+
+            # Re-read PATH from the registry before looking for the driver.
+            # The upstream installer runs inside Start-Job, so it appends its
+            # bin directory to the *stored* user PATH; this process still holds
+            # the copy it inherited at launch. Without this the lookup below
+            # misses a driver that installed perfectly well, and the install
+            # log ends on a warning telling the user to repair something that
+            # is not broken. The same refresh is used elsewhere in this script
+            # after any step that edits PATH.
+            $env:Path = [Environment]::GetEnvironmentVariable("Path", "User") + ";" + [Environment]::GetEnvironmentVariable("Path", "Machine")
+
             $installedCuaDriver = Get-Command cua-driver -ErrorAction SilentlyContinue
             if ($installedCuaDriver -and (Test-CuaDriverRuntimeContract -DriverPath $installedCuaDriver.Source)) {
                 Write-Success "Computer Use driver installed (enable via 'fool tools' -> Computer Use)"
@@ -5178,7 +5199,7 @@ function Get-FoolProgramPaths {
     # Everything here is re-created by a normal install. Ordered widest-first
     # so a failure part-way through still leaves an obviously broken tree
     # rather than a subtly half-working one.
-    @(
+    $fixed = @(
         (Join-Path $Root 'fool-agent'),      # current runtime clone
         (Join-Path $Root 'hermes-agent'),    # clone name used before the rename
         (Join-Path $Root 'bin'),             # bundled python / node / git
@@ -5186,6 +5207,22 @@ function Get-FoolProgramPaths {
         (Join-Path $Root 'bootstrap-cache'),
         (Join-Path $Root 'web-ui-build-stamp.json')
     )
+
+    # Debris from an earlier failed run. When the delete above could not
+    # finish, the clone step found a non-empty non-repo directory and renamed
+    # it to `<clone>.broken-<timestamp>` rather than destroying it. That was
+    # the right call at the time, but the copy is a checkout of a public
+    # repository -- no user data has ever lived here -- so a later reinstall
+    # is the moment to clear it. Left alone it accumulates one full copy of
+    # the tree per failed attempt.
+    $debris = @(
+        Get-ChildItem -Path $Root -Directory -Force -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -like 'fool-agent.broken-*' -or
+                           $_.Name -like 'hermes-agent.broken-*' } |
+            ForEach-Object { $_.FullName }
+    )
+
+    return @($fixed + $debris)
 }
 
 function Test-PreviousFoolInstall {
@@ -5205,14 +5242,28 @@ function Stop-FoolProcesses {
     # A running desktop app holds its own binaries open; on Windows that turns
     # the removal below into a partial delete with no error, which is the
     # hardest kind of leftover to diagnose later.
-    foreach ($name in @('TheFool', 'Fool')) {
+    #
+    # The product name is "The Fool" -- WITH the space -- so the shipped
+    # executable is "The Fool.exe" and Windows reports the process as
+    # "The Fool". The two spellings below it never matched anything, which
+    # is why a reinstall with the app open reported "These paths could not be
+    # removed" and then left a `.broken-<timestamp>` copy of the whole tree
+    # behind. Keep the older spellings for builds that predate the rename.
+    foreach ($name in @('The Fool', 'TheFool', 'Fool', 'Hermes')) {
         Get-Process -Name $name -ErrorAction SilentlyContinue |
             Stop-Process -Force -ErrorAction SilentlyContinue
     }
 
     # The backend interpreter is only ours if it runs FROM the install root --
     # matching on the process name alone would kill an unrelated Python.
-    Get-Process -Name 'python', 'pythonw' -ErrorAction SilentlyContinue | ForEach-Object {
+    #
+    # node and electron get the same treatment. They were missing entirely
+    # even though the install directory is where the desktop app's
+    # node_modules and its Electron runtime live: a dev server or a stray
+    # helper started from here holds the tree open exactly like the app does.
+    # The path check is what makes this safe -- an unrelated node project of
+    # the user's is untouched.
+    Get-Process -Name 'python', 'pythonw', 'node', 'electron' -ErrorAction SilentlyContinue | ForEach-Object {
         try {
             if ($_.Path -and $_.Path.StartsWith($Root, [StringComparison]::OrdinalIgnoreCase)) {
                 Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue
@@ -5225,6 +5276,76 @@ function Stop-FoolProcesses {
     Start-Sleep -Milliseconds 800
 }
 
+function Remove-DirectoryHard {
+    <#
+        Delete a directory tree that Windows does not want deleted.
+
+        Measured on the user's laptop: the uninstall step reported
+        "These paths could not be removed" for the install directory, the
+        clone step then found a non-empty non-repo directory and renamed it
+        to `.broken-<timestamp>`, and that debris stayed on disk forever --
+        the opposite of the zero-residue reinstall this step promises.
+
+        The cause on that machine was a live handle: the desktop app was
+        running and Stop-FoolProcesses was looking for the wrong process
+        name (see there). That is fixed at the source, and no delete can
+        beat a handle that is still open -- so the tiers here are a safety
+        net for the OTHER ways this call fails, not for that one.
+
+        Measured, so the net is honest about its own limits: a 40-deep
+        node_modules chain (803 characters) containing read-only .git
+        objects is removed by tier 1 alone on this Windows build. Tiers 2-4
+        are for the cases tier 1 is known to miss -- read-only attributes on
+        older hosts, paths the cmdlet cannot name, and NTFS reporting a
+        parent non-empty for a moment after its children are gone. The short
+        pause before the last tier is the part that helps most often: a
+        process that has just been asked to exit needs a beat to let go.
+
+        Returns $true when the directory is gone.
+    #>
+    param([string]$Path)
+
+    if (-not (Test-Path -LiteralPath $Path)) { return $true }
+
+    # Tier 1: the cheap call, which succeeds on most trees.
+    Remove-Item -Recurse -Force -ErrorAction SilentlyContinue -LiteralPath $Path
+    if (-not (Test-Path -LiteralPath $Path)) { return $true }
+
+    # Tier 2: strip read-only, then retry. Git marks everything under
+    # `.git/objects` read-only and that alone stops the recursion.
+    try {
+        Get-ChildItem -LiteralPath $Path -Recurse -Force -ErrorAction SilentlyContinue |
+            ForEach-Object {
+                try { $_.Attributes = [IO.FileAttributes]::Normal } catch { }
+            }
+    } catch { }
+    Remove-Item -Recurse -Force -ErrorAction SilentlyContinue -LiteralPath $Path
+    if (-not (Test-Path -LiteralPath $Path)) { return $true }
+
+    # Tier 3: hand it to cmd. `rmdir /s /q` walks the tree with the Win32
+    # calls directly and is not bound by the cmdlet's path handling.
+    & $env:ComSpec /d /s /c "rmdir /s /q ""$Path""" 2>&1 | Out-Null
+    if (-not (Test-Path -LiteralPath $Path)) { return $true }
+
+    # A process asked to exit a moment ago may still be closing its handles.
+    Start-Sleep -Milliseconds 750
+
+    # Tier 4: mirror an empty directory over it. robocopy speaks the long-path
+    # API, so this clears exactly the deep `node_modules` entries the earlier
+    # tiers could not address; the emptied shell then removes normally.
+    $empty = Join-Path ([IO.Path]::GetTempPath()) ("fool-empty-" + [Guid]::NewGuid().ToString("N"))
+    try {
+        New-Item -ItemType Directory -Force -Path $empty | Out-Null
+        & robocopy $empty $Path /MIR /NFL /NDL /NJH /NJS /NC /NS /NP 2>&1 | Out-Null
+        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue -LiteralPath $Path
+    } catch { } finally {
+        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue -LiteralPath $empty
+    }
+
+    return (-not (Test-Path -LiteralPath $Path))
+}
+
+
 function Remove-FoolPathEntries {
     param([string]$Root)
 
@@ -5235,6 +5356,29 @@ function Remove-FoolPathEntries {
         $entry = $_.Trim()
         if (-not $entry) { return $false }
         -not $entry.StartsWith($Root, [StringComparison]::OrdinalIgnoreCase)
+    })
+
+    # Second pass: OUR entries left by OTHER roots, which the pass above
+    # cannot see because it only knows the current one.
+    #
+    # Measured on the author's machine: the user PATH carried eight entries
+    # for this program and six pointed at directories that no longer exist --
+    # an old %LOCALAPPDATA%\hermes root, an intermediate
+    # %LOCALAPPDATA%\thefool root, a renamed hermes-agent clone, and two
+    # left in %TEMP% by a throwaway test install. Dead entries are not
+    # cosmetic: the moment the live entry ahead of them is removed, `fool`
+    # on the terminal starts resolving to whichever stale copy still has a
+    # binary, which is exactly the "two installs on one machine" problem.
+    #
+    # The existence check is what makes this safe. An entry is dropped ONLY
+    # when its directory is gone, so a real third-party Hermes install that
+    # is still present keeps its place on PATH -- the README promises not to
+    # disturb it.
+    $ourMarker = '[\\/](fool|thefool|hermes|fool-agent|hermes-agent)([\\/]|$)'
+    $kept = @($kept | Where-Object {
+        $entry = $_.Trim()
+        if ($entry -notmatch $ourMarker) { return $true }
+        Test-Path -LiteralPath $entry
     })
 
     $updated = ($kept -join ';')
@@ -5261,6 +5405,133 @@ function Remove-FoolShortcuts {
     }
 }
 
+function Repair-OriginRemote {
+    <#
+        Point an older install at the repository this script belongs to.
+
+        Nothing here ever rewrote `origin`. An install created from the
+        previous repository therefore kept fetching from it forever: the
+        update step ran, reported success, and delivered nothing new. The
+        clone on the author's own machine was found sitting on the old
+        remote, several commits behind, with no way to notice.
+
+        A plain pull cannot cross this gap. The current repository was
+        published as a fresh single-commit history, so it shares no ancestor
+        with the old one and `git pull` stops at "refusing to merge unrelated
+        histories". Fetch the new ref and reset onto it instead.
+
+        The reset is safe precisely because this directory is program only:
+        every piece of user state -- sessions, agents, memories, downloaded
+        models, cloned voices -- lives in FOOL_HOME *beside* this clone, not
+        inside it. And `reset --hard` rewrites tracked files only, so the venv
+        and node_modules sitting untracked in here survive it.
+
+        Returns $true when the remote was moved.
+    #>
+    param([string]$RepoDir, [string]$Branch)
+
+    $current = ""
+    try {
+        $current = (& git -C $RepoDir remote get-url origin 2>$null | Out-String).Trim()
+    } catch { }
+
+    if (-not $current) { return $false }
+
+    # Compare identities, not spellings: ssh and https forms of the same
+    # repository must both count as correct, or this would "migrate" an
+    # already-correct install on every run.
+    $norm = $current -replace "\.git$", "" `
+                     -replace "^git@github\.com:", "github.com/" `
+                     -replace "^https?://", ""
+    if ($norm -eq "github.com/zaorenn/fool-agent") { return $false }
+
+    # Only a PREVIOUS NAME OF THIS PROJECT is migrated -- never an arbitrary
+    # non-official remote. `fool update` supports running from a fork
+    # (see _is_fork in fool_cli/update_cmd.py), and someone who deliberately
+    # pointed their install at their own fork must keep it. Rewriting that
+    # would silently take a choice away and throw out their work.
+    $superseded = @("github.com/zaorenn/thefool-desktop")
+    if ($superseded -notcontains $norm) { return $false }
+
+    Write-Info "This install still points at $current"
+    Write-Info "Moving it to the current repository..."
+
+    Invoke-NativeWithRelaxedErrorAction {
+        & git -C $RepoDir remote set-url origin $RepoUrlHttps 2>&1 | Out-Null
+    }
+    Invoke-NativeWithRelaxedErrorAction {
+        & git -C $RepoDir fetch --depth 1 origin $Branch 2>&1 | Out-Null
+    }
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warn "Could not fetch from the current repository; keeping the old remote for now"
+        return $false
+    }
+
+    Invoke-NativeWithRelaxedErrorAction {
+        & git -C $RepoDir reset --hard FETCH_HEAD 2>&1 | Out-Null
+    }
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warn "Could not switch this install to the current repository"
+        return $false
+    }
+
+    Write-Success "This install now updates from $RepoUrlHttps"
+    return $true
+}
+
+
+function Remove-LegacyRoots {
+    <#
+        Clear data directories left by the pre-rename installs.
+
+        An intermediate build used %LOCALAPPDATA%\thefool before
+        FOOL_HOME settled on %LOCALAPPDATA%\fool. Remove-PreviousInstall
+        only ever looks inside the CURRENT root, so that older root survived
+        every reinstall -- a second full copy of the program on disk.
+
+        %LOCALAPPDATA%\hermes IS DELIBERATELY NOT LISTED. That is also
+        where upstream Hermes Agent installs itself, and this repo's README
+        promises "will not touch an existing Hermes config". A machine can
+        genuinely carry both. Checked on the author's machine while writing
+        this: that directory holds a git clone whose origin is unset and
+        whose history reads as upstream's -- so ownership cannot be proven,
+        and a wrong guess destroys another product's install. Removing it
+        stays a manual decision for whoever can actually tell.
+
+        Only PROGRAM directories are removed, and the root itself goes ONLY
+        when no file is left in it. Someone who ran an older build for months
+        has real sessions there, and losing their history to reclaim a few
+        hundred megabytes would be a terrible trade.
+    #>
+    param([string]$CurrentRoot)
+
+    $current = ""
+    try { $current = [IO.Path]::GetFullPath($CurrentRoot).TrimEnd('') } catch { }
+
+    foreach ($legacy in @("$env:LOCALAPPDATA\thefool")) {
+        if (-not (Test-Path -LiteralPath $legacy)) { continue }
+
+        # Never touch the root this install is actually using.
+        $full = ""
+        try { $full = [IO.Path]::GetFullPath($legacy).TrimEnd('') } catch { continue }
+        if ($full -eq $current) { continue }
+
+        foreach ($p in (Get-FoolProgramPaths -Root $legacy)) {
+            if (Test-Path -LiteralPath $p) { [void](Remove-DirectoryHard -Path $p) }
+        }
+
+        $left = @(Get-ChildItem -LiteralPath $legacy -Recurse -File -Force -ErrorAction SilentlyContinue)
+        if ($left.Count -eq 0) {
+            if (Remove-DirectoryHard -Path $legacy) {
+                Write-Success "Removed the old install root $legacy"
+            }
+        } else {
+            Write-Info "Kept $legacy -- it still holds $($left.Count) of your files"
+        }
+    }
+}
+
+
 function Remove-PreviousInstall {
     param(
         [string]$Root,
@@ -5276,24 +5547,20 @@ function Remove-PreviousInstall {
     $failed = @()
     foreach ($p in (Get-FoolProgramPaths -Root $Root)) {
         if (-not (Test-Path $p)) { continue }
-        try {
-            Remove-Item -Recurse -Force -ErrorAction Stop $p
-        } catch {
-            $failed += $p
-        }
+        if (-not (Remove-DirectoryHard -Path $p)) { $failed += $p }
     }
 
     Remove-FoolPathEntries -Root $Root
     Remove-FoolShortcuts
+    Remove-LegacyRoots -CurrentRoot $Root
 
     if ($PurgeUserData) {
         # Explicitly asked for. Sessions, memory, config, credentials, cloned
         # voices -- all of it.
-        try {
-            if (Test-Path $Root) { Remove-Item -Recurse -Force -ErrorAction Stop $Root }
+        if (Remove-DirectoryHard -Path $Root) {
             Write-Success "Previous installation and all user data removed"
-        } catch {
-            Write-Warn "Some files under $Root could not be removed: $($_.Exception.Message)"
+        } else {
+            Write-Warn "Some files under $Root could not be removed"
         }
         return
     }

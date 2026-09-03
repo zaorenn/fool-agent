@@ -1326,7 +1326,7 @@ if (IS_WINDOWS) {
 app.setAboutPanelOptions({
   applicationName: APP_NAME,
   applicationVersion: resolveFoolVersion(),
-  copyright: 'Copyright © 2026 Fool Labs'
+  copyright: 'Copyright © 2026 zaorenn'
 })
 
 // Custom scheme for streaming audio/video into the renderer. Local paths read
@@ -15962,7 +15962,7 @@ function showAboutPanelFresh() {
   app.setAboutPanelOptions({
     applicationName: APP_NAME,
     applicationVersion: resolveFoolVersion(),
-    copyright: 'Copyright © 2026 Fool Labs'
+    copyright: 'Copyright © 2026 zaorenn'
   })
   app.showAboutPanel()
 }

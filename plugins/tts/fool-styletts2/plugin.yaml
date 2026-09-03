@@ -1,7 +1,7 @@
 name: fool-styletts2
 version: 1.0.0
 description: "StyleTTS 2 (MIT) — autoregressive DEĞİL, bu yüzden uzun cümlede kaymıyor ve prozodisi Kokoro'dan belirgin daha doğal. Bu makinede ölçüldü: model yükleme 5,04 sn, ısınmış sentez 0,42 sn (CUDA). Kendi izole ortamında çalışır: paketin 2024 pinleri (huggingface-hub<0.20, langchain<0.2) ana ortamı geriye düşürürdü."
-author: Fool Labs
+author: zaorenn
 kind: backend
 provides_tts_providers:
   - styletts2

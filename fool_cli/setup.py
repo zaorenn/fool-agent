@@ -2782,7 +2782,7 @@ def _run_portal_one_shot(config: dict) -> None:
             Colors.MAGENTA,
         )
     )
-    print(color("│     ⚕ The Fool Setup — Fool Labs Portal (one-shot)             │", Colors.MAGENTA))
+    print(color("│     ⚕ The Fool Setup — Nous Research Portal (one-shot)  │", Colors.MAGENTA))
     print(
         color(
             "└─────────────────────────────────────────────────────────┘",

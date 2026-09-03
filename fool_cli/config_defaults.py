@@ -4038,7 +4038,7 @@ OPTIONAL_ENV_VARS = {
         "advanced": True,
     },
     "TOOL_GATEWAY_USER_TOKEN": {
-        "description": "Explicit Fool Labs Subscriber access token for tool-gateway requests (optional; otherwise read from the Fool auth store)",
+        "description": "Explicit Nous Research Subscriber access token for tool-gateway requests (optional; otherwise read from the Fool auth store)",
         "prompt": "Tool-gateway user token",
         "url": None,
         "password": True,

@@ -258,4 +258,4 @@ Remove-Item -Recurse -Force "$env:LOCALAPPDATA\fool\hermes-agent\venv"
 
 MIT — see [LICENSE](../../LICENSE).
 
-Built by Fool Labs. Forked from [Hermes Agent](https://github.com/NousResearch/hermes-agent) (Nous Research) — see [LICENSE](../../LICENSE) for attribution; not affiliated with or endorsed by Nous Research.
+Built by zaorenn. Forked from [Hermes Agent](https://github.com/NousResearch/hermes-agent) (Nous Research) — see [LICENSE](../../LICENSE) for attribution; not affiliated with or endorsed by Nous Research.

@@ -1602,6 +1602,98 @@ OFFICIAL_REPO_URLS = {
 
 OFFICIAL_REPO_URL = "https://github.com/zaorenn/fool-agent.git"
 
+#: Depo ADINI DEGISTIRDI. Bu adreslerden birine bakan bir kurulum, bu
+#: projenin eski bir adina bakiyor demektir -- catal degil. Ayrimi yapmak
+#: sart: ``_is_fork`` catala bakan kurulumu bilerek destekliyor, ve birinin
+#: kendi catalini zorla resmi depoya cevirmek onun isini atmak olurdu.
+SUPERSEDED_REPO_URLS = {
+    "https://github.com/zaorenn/thefool-desktop.git",
+    "git@github.com:zaorenn/thefool-desktop.git",
+    "https://github.com/zaorenn/thefool-desktop",
+    "git@github.com:zaorenn/thefool-desktop",
+}
+
+
+def _is_superseded_origin(origin_url: Optional[str]) -> bool:
+    """``origin`` bu projenin ESKI adina mi bakiyor?"""
+    if not origin_url:
+        return False
+    normalized = origin_url.rstrip("/")
+    if normalized.endswith(".git"):
+        normalized = normalized[:-4]
+    for old in SUPERSEDED_REPO_URLS:
+        candidate = old.rstrip("/")
+        if candidate.endswith(".git"):
+            candidate = candidate[:-4]
+        if normalized == candidate:
+            return True
+    return False
+
+
+def _migrate_superseded_origin(
+    git_cmd: list[str], cwd: Path, origin_url: Optional[str]
+) -> bool:
+    """Eski ada bakan bir kurulumu guncel depoya tasi.
+
+    Hicbir sey ``origin``i yeniden yazmiyordu, dolayisiyla eski depodan
+    kurulmus bir makine sonsuza dek oradan cekmeye calisiyordu: guncelleme
+    calisiyor, basarili diyor, hicbir yenilik getirmiyordu.
+
+    Duz ``pull`` bu boslugu gecemez. Guncel depo tek commit'lik TEMIZ bir
+    gecmis olarak yayinlandi, yani eskisiyle ortak atasi yok ve ``git pull``
+    "refusing to merge unrelated histories" ile durur. Bu yuzden yeni ref
+    getirilip uzerine ``reset`` ediliyor.
+
+    ``reset`` guvenli, cunku bu dizin YALNIZCA program: oturumlar,
+    agent'lar, hafiza, indirilen modeller ve klonlanmis sesler bu klonun
+    YANINDA, FOOL_HOME icinde duruyor -- icinde degil. Ustelik
+    ``reset --hard`` yalnizca TAKIPLI dosyalari geri yazar, yani burada
+    takipsiz duran venv ve node_modules ondan sag cikar.
+    """
+    if not _is_superseded_origin(origin_url):
+        return False
+
+    print(f"→ This install still points at {origin_url}")
+    print("  Moving it to the current repository...")
+
+    try:
+        set_url = subprocess.run(
+            git_cmd + ["remote", "set-url", "origin", OFFICIAL_REPO_URL],
+            cwd=cwd, capture_output=True, text=True,
+            encoding="utf-8", errors="replace",
+        )
+        if set_url.returncode != 0:
+            print("  Could not rewrite the remote; keeping the old one for now.")
+            return False
+
+        fetched = subprocess.run(
+            git_cmd + ["fetch", "--depth", "1", "origin", "main"],
+            cwd=cwd, capture_output=True, text=True,
+            encoding="utf-8", errors="replace",
+        )
+        if fetched.returncode != 0:
+            print("  Could not reach the current repository; keeping the old remote.")
+            subprocess.run(
+                git_cmd + ["remote", "set-url", "origin", origin_url or ""],
+                cwd=cwd, capture_output=True, text=True,
+                encoding="utf-8", errors="replace",
+            )
+            return False
+
+        reset = subprocess.run(
+            git_cmd + ["reset", "--hard", "FETCH_HEAD"],
+            cwd=cwd, capture_output=True, text=True,
+            encoding="utf-8", errors="replace",
+        )
+        if reset.returncode != 0:
+            print("  Could not switch this install to the current repository.")
+            return False
+    except Exception:
+        return False
+
+    print(f"  This install now updates from {OFFICIAL_REPO_URL}")
+    return True
+
 SKIP_UPSTREAM_PROMPT_FILE = ".skip_upstream_prompt"
 
 def _get_origin_url(git_cmd: list[str], cwd: Path) -> Optional[str]:
@@ -2803,7 +2895,7 @@ def _ensure_fhs_path_guard() -> None:
         print("    (reload your shell or run 'source ~/.bashrc' to pick it up)")
 
 def _ensure_acp_launcher() -> None:
-    """Self-heal: install a ``hermes-acp`` launcher next to the ``hermes`` one.
+    r"""Self-heal: install a ``hermes-acp`` launcher next to the ``hermes`` one.
 
     Mirrors the launcher block in ``scripts/install.sh`` so existing installs
     gain the ACP command on ``fool update`` without a reinstall.  ACP hosts
@@ -4734,6 +4826,10 @@ def _cmd_update_impl(args, gateway_mode: bool):
 
     # Detect if we're updating from a fork (before any branch logic)
     origin_url = _m()._get_origin_url(git_cmd, _m().PROJECT_ROOT)
+    # Eski ada bakan kurulumlar once tasinir; yoksa asagidaki catal uyarisi
+    # onlari yanlislikla "catal" diye etiketler ve guncelleme hic gelmez.
+    if _migrate_superseded_origin(git_cmd, _m().PROJECT_ROOT, origin_url):
+        origin_url = _m()._get_origin_url(git_cmd, _m().PROJECT_ROOT)
     is_fork = _is_fork(origin_url)
 
     if is_fork:

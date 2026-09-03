@@ -132,11 +132,31 @@ class TestPowerShellBetigi_SAF_ASCII:
 
 
 class TestDepoAdresi_YENI:
-    def test_eski_depo_adresi_kalmadi(self):
-        # Eski adrese giden bir kurulum, ilk adımda olmayan bir depoyu
-        # klonlamaya calisir.
-        for script in (PS1, SH):
-            assert "thefool-desktop" not in script
+    def test_eski_adres_YALNIZCA_tasima_kaynagi_olarak_geciyor(self):
+        """Eski adres klonlanmamali -- ama TANINMALI.
+
+        Ilk yazim "betikte hic gecmesin" diyordu. O kural, eski depodan
+        kurulmus makinelerin sonsuza dek oradan cekmeye calismasi
+        sorununu gorunmez kildi: origin'i hicbir sey yeniden yazmiyordu.
+
+        Dogru sozlesme: eski adres SADECE tasima fonksiyonunda, "bu
+        kurulumu guncel depoya tasi" kaynagi olarak gecebilir. Klonlama,
+        fetch hedefi ya da indirme adresi olarak asla.
+        """
+        for script, fn in ((PS1, "function Repair-OriginRemote"),
+                           (SH, "remote-migration")):
+            if fn == "remote-migration":
+                tasima = script.split("repair_origin_remote() {")[1].split(chr(10) + "}")[0]
+                gerisi = (script.split("repair_origin_remote() {")[0]
+                          + script.split("repair_origin_remote() {")[1].split(chr(10) + "}", 1)[1])
+            else:
+                tasima = script.split(fn)[1].split(chr(10) + "function ")[0]
+                gerisi = script.split(fn)[0] + script.split(fn)[1].split(chr(10) + "function ", 1)[1]
+
+            assert "thefool-desktop" in tasima, "eski adres taninmiyor; tasima olmaz"
+            assert "thefool-desktop" not in gerisi, (
+                "eski adres tasima disinda geciyor -- klonlama/fetch hedefi olabilir"
+            )
 
     def test_yeni_depo_adresi_kullaniliyor(self):
         for script in (PS1, SH):
@@ -240,12 +260,6 @@ class TestMarkaTemasi_KURULUYOR:
         for script in (PS1, SH):
             assert "skin: the-fool" in script
 
-    def test_yalnizca_YENI_yapilandirmada(self):
-        # Var olan bir config kullanicinin sectigi bir temayi tasiyor olabilir;
-        # uzerine yazmak onun tercihini elinden almak olurdu.
-        assert "$configIsNew" in PS1
-        assert "config_is_new" in SH
-
     def test_VAR_OLAN_deger_degistiriliyor_eklenmiyor(self):
         """Şablonda zaten ``display:`` ve ``skin: default`` var.
 
@@ -254,7 +268,7 @@ class TestMarkaTemasi_KURULUYOR:
         işlevsizdi. Blok eklemek ise ikinci bir ``display:`` anahtarı üretip
         YAML'i bozardı. Doğrusu var olan değeri yeniden yazmak.
         """
-        assert "skin:\s*default" in PS1
+        assert "skin:" + chr(92) + "s*default" in PS1
         assert "skin:[[:space:]]*default" in SH
 
     def test_sablon_hala_default_tasiyor(self):
@@ -306,3 +320,216 @@ class TestKurulumSihirbazi_YEREL_ONCE:
 
         assert "No local model server answered yet" in block
         assert "fool portal" in block
+
+
+class TestKurulumBetikleri_KONTROL_KARAKTERI_YOK:
+    """Her iki kurulum betiginde de C0 kontrol karakteri bulunmamali.
+
+    Olculen hata, UC KEZ: duzenleme sirasinda yazilan bir kacis dizisi
+    dosyaya COZULMUS halde dustu.
+
+    1. install.ps1 -- "ters bolu + t", SEKME'ye donustu ve
+       "$skinDir + ters bolu + the-fool.yaml" yolunun ortasina gomuldu.
+       Kurulum "Yolda gecersiz karakterler var" diyerek oldu; kullanici
+       hicbir sey kuramadi.
+    2. install.ps1 -- ayni satirin ilk onariminda ikinci bir kopya
+       gozden kacti, cunku dogrulama taramasi sekmeyi HARIC TUTUYORDU.
+    3. install.sh -- "ters bolu + 1", U+0001'e donustu. sed'in geri
+       basvurusu yerine kullanicinin config.yaml'ina gorunmez bir
+       kontrol karakteri yazacakti.
+
+    Ustteki ASCII muhafizi bunlarin hicbirini yakalamadi: yalnizca
+    ord > 127 bakiyor, sekme (9) ve SOH (1) o esigin altinda kaliyor.
+    """
+
+    def test_c0_kontrol_karakteri_yok(self):
+        # Iki betik de girintide bosluk kullaniyor, yani SEKME dahil
+        # her C0 karakteri suphelidir.
+        izinli = {chr(10), chr(13)}
+
+        for ad, metin in (("install.ps1", PS1), ("install.sh", SH)):
+            suclular = [
+                (i + 1, hex(ord(ch)))
+                for i, satir in enumerate(metin.split(chr(10)))
+                for ch in satir
+                if ord(ch) < 32 and ch not in izinli
+            ]
+
+            assert not suclular, ad + " C0 kontrol karakteri: " + repr(suclular[:5])
+
+    def test_sed_geri_basvurusu_girintiyi_koruyor(self):
+        # Yakalanan girinti degistirmede KULLANILMALI. Kullanilmazsa
+        # "  skin: default" sifirinci sutuna duser, display: altindaki
+        # yuvalanma bozulur ve YAML'in anlami degisir.
+        satirlar = [l for l in SH.split(chr(10)) if "skin: the-fool/" in l]
+
+        assert len(satirlar) == 1, satirlar
+        assert chr(92) + "1skin: the-fool" in satirlar[0], satirlar[0]
+
+    def test_skin_mevcut_config_uzerinde_de_calisiyor(self):
+        # Kapi "bu kosu config'i olusturduysa" idi; hicbir sey korumuyordu
+        # cunku yeniden yazilan tek deger upstream'in secilmemis
+        # varsayilani. Kapi yuzunden daha once kurmus HER makine
+        # upstream paletinde kaliyordu.
+        assert "$configIsNew" not in PS1
+        assert "config_is_new" not in SH
+
+
+class TestCalisanUygulamaDURDURULUYOR:
+    """Kaldirma adimi, uygulamanin GERCEK surec adini durdurmali.
+
+    Olculen hata: ``productName`` "The Fool" -- BOSLUKLU -- oldugu icin
+    kurulan calistirilabilir "The Fool.exe" ve Windows sureci
+    "The Fool" olarak bildiriyor. Betik ise 'TheFool' ve 'Fool'
+    ariyordu; ikisi de hicbir seye uymadi.
+
+    Sonuc kullanicinin log'unda gorundu: uygulama acikken yeniden
+    kurulum "These paths could not be removed" dedi, ardindan klonlama
+    adimi agacin tamamini ".broken-<zaman>" olarak yeniden adlandirdi
+    ve o kopya diskte kaldi -- bu adimin sozu verdigi "sifir kalinti"
+    yeniden kurulumun tam tersi.
+
+    Test, listeyi package.json'daki ada BAGLIYOR: urun adi degisirse
+    ve liste guncellenmezse burasi kirilir.
+    """
+
+    def test_urun_adi_durdurma_listesinde(self):
+        import json
+
+        pkg = json.loads(
+            (REPO_ROOT / "apps" / "desktop" / "package.json").read_text(encoding="utf-8")
+        )
+        urun = pkg["build"]["productName"]
+
+        blok = PS1.split("function Stop-FoolProcesses")[1].split("function ")[0]
+
+        assert "'" + urun + "'" in blok, (
+            "Stop-FoolProcesses '" + urun + "' surecini aramiyor; "
+            "calisan uygulama durdurulmuyor"
+        )
+
+    def test_node_ve_electron_da_kapsamda(self):
+        # Kurulum dizini masaustu uygulamasinin node_modules'unu ve
+        # Electron calisma zamanini barindiriyor; buradan baslamis bir
+        # node ya da electron agaci uygulamanin kendisi kadar kilitler.
+        blok = PS1.split("function Stop-FoolProcesses")[1].split("function ")[0]
+
+        assert "'node'" in blok
+        assert "'electron'" in blok
+
+    def test_isim_disi_surecler_YOL_ile_sinirli(self):
+        # Ada gore oldurmek kullanicinin alakasiz python/node surecini
+        # kapatirdi. Kurulum kokunden calisiyor olmasi sarti guvenligi
+        # saglayan sey.
+        blok = PS1.split("function Stop-FoolProcesses")[1].split("function ")[0]
+
+        assert "StartsWith($Root" in blok
+
+
+class TestEskiKOKLER_TEMIZLENIYOR:
+    """Yeniden adlandirma oncesi kalan veri kokleri de kaldirilmali.
+
+    Olculen durum: yeniden adlandirma FOOL_HOME'u
+    %LOCALAPPDATA%/hermes'ten %LOCALAPPDATA%/fool'a tasidi, aradaki bir
+    yapi da %LOCALAPPDATA%/thefool kullandi. Kaldirma adimi YALNIZCA
+    guncel koke bakiyordu, dolayisiyla eski kokler her yeniden kurulumdan
+    sag cikti: diskte ikinci bir tam program kopyasi.
+
+    Bu makinede olculdu: eski hermes koku 358 MB klon + 49 MB calisma
+    zamani tasiyordu ve sessions/memories/skills/cron dizinlerinin HEPSI
+    bostu -- saf program kalintisi.
+
+    Ama bu herkes icin varsayilamaz. Hermes doneminde aylarca kullanmis
+    birinin orada gercek oturumlari var. Bu yuzden sozlesme su: PROGRAM
+    dizinleri kaldirilir, kok ise ANCAK icinde hicbir dosya kalmadiysa
+    kaldirilir.
+    """
+
+    def _blok(self, metin, ad):
+        return metin.split(ad)[1].split(chr(10) + "function ")[0]
+
+    def test_ps1_kendi_eski_kokumuzu_tariyor(self):
+        blok = self._blok(PS1, "function Remove-LegacyRoots")
+
+        assert "LOCALAPPDATA" + chr(92) + "thefool" in blok
+
+    def test_UPSTREAM_hermes_koku_HEDEFLENMIYOR(self):
+        # README acikca "will not touch an existing Hermes config" diyor ve
+        # %LOCALAPPDATA%/hermes upstream Hermes Agent'in KENDI kurulum yeri.
+        # Yazarin makinesinde bakildi: oradaki klonun origin'i tanimsiz ve
+        # gecmisi upstream'inki gibi okunuyor -- yani sahipligi kanitlanamaz
+        # ve yanlis tahmin baska bir urunun kurulumunu yok eder.
+        blok = self._blok(PS1, "function Remove-LegacyRoots")
+        sh_blok = SH.split("remove_legacy_roots() {")[1].split(chr(10) + "}")[0]
+
+        assert 'LOCALAPPDATA' + chr(92) + 'hermes"' not in blok
+        assert '"$HOME/.hermes"' not in sh_blok
+
+    def test_ps1_veri_varsa_kok_KORUNUYOR(self):
+        blok = self._blok(PS1, "function Remove-LegacyRoots")
+
+        # Kokun silinmesi, geriye dosya kalmamis olmasina bagli olmali.
+        assert "-Recurse -File" in blok
+        assert "$left.Count -eq 0" in blok
+
+    def test_ps1_aktif_koke_dokunmuyor(self):
+        # Guncel FOOL_HOME eski adlardan biriyse silmek felaket olurdu.
+        blok = self._blok(PS1, "function Remove-LegacyRoots")
+
+        assert "$full -eq $current" in blok
+
+    def test_ps1_kaldirma_akisina_BAGLI(self):
+        # Yazilip cagrilmamasi sessiz bir no-op olurdu.
+        assert "Remove-LegacyRoots -CurrentRoot" in PS1
+
+    def test_sh_ayni_sozlesmeyi_tasiyor(self):
+        # Bu depoda tekrar eden hata: ders kardes betige tasinmiyor.
+        blok = SH.split("remove_legacy_roots() {")[1].split(chr(10) + "}")[0]
+
+        assert "$HOME/.thefool" in blok
+        assert "-type f" in blok
+        assert '"$_left" -eq 0' in blok
+        assert "remove_legacy_roots " in SH.split("remove_legacy_roots() {")[2 - 1]
+
+
+class TestOluPATHGirdileri_TEMIZLENIYOR:
+    """Baska koklerden kalan OLU PATH girdileri kaldirilmali.
+
+    Olculen durum: yazarin kendi makinesinde kullanici PATH'i bu program
+    icin SEKIZ girdi tasiyordu, ALTISI artik var olmayan bir dizini
+    gosteriyordu -- eski %LOCALAPPDATA%/hermes koku, ara
+    %LOCALAPPDATA%/thefool koku, adi degistirilmis bir hermes-agent
+    klonu, ve bir atilabilir test kurulumunun %TEMP% altinda biraktigi
+    iki girdi.
+
+    Bu kozmetik degil: ONDEKI canli girdi kaldirilir kaldirilmaz
+    terminaldeki ``fool`` komutu, hala binary'si duran hangi eski
+    kopyaya rastlarsa ona cozulmeye baslar -- "ayni makinede iki
+    kurulum" sorununun en sinsi hali.
+
+    Guvenligi saglayan sey VAR OLMA kontrolu: bir girdi YALNIZCA kendi
+    dizini gercekten yok oldugunda dusuyor. Hala var olan bir ucuncu
+    taraf Hermes kurulumu (README'nin dokunmama sozu verdigi) yerinde
+    kalir. Regex'in davranisi PowerShell'in kendisiyle elle dogrulandi:
+    yazarin gercek PATH'inde 4 olu girdiyi atti, 3 canli/var-olan girdiyi
+    (biri ucuncu taraf hermes olabilecek) birakti.
+    """
+
+    def _blok(self):
+        return PS1.split("function Remove-FoolPathEntries")[1].split(chr(10) + "function ")[0]
+
+    def test_ikinci_geciste_VAR_OLMA_kontrolu_var(self):
+        blok = self._blok()
+
+        assert "Test-Path -LiteralPath $entry" in blok
+
+    def test_bilinen_ADLARIN_hepsi_tariniyor(self):
+        blok = self._blok()
+
+        for ad in ("fool", "thefool", "hermes", "fool-agent", "hermes-agent"):
+            assert ad in blok, ad
+
+    def test_kaldirma_akisina_BAGLI(self):
+        # Yazilip cagrilmamasi sessiz bir no-op olurdu.
+        assert "Remove-FoolPathEntries -Root $Root" in PS1
+

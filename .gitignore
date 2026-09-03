@@ -219,3 +219,21 @@ graphify-out/
 
 # Local working notes -- not part of the project.
 HANDOFF.md
+
+# FOOL_HOME verisi -- depoya ASLA girmemeli.
+#
+# Normalde bunlar %LOCALAPPDATA%/fool (ya da ~/.fool) altinda, deponun
+# tamamen disinda durur. Ama FOOL_HOME'u depo dizinine ayarlayan bir
+# gelistirme kurulumunda tam burada olusurlar; o zaman klonlanmis sesler,
+# kisisel agent profilleri ve sohbet gecmisi tek bir 'git add -A' ile
+# herkese acik depoya gidebilir. Geri alinamayan bir hata, ve maliyeti
+# alti satir.
+#
+# Kok seviyesine sabitlendi ('/' ile): 'skills/' ve 'cron/' GERCEK depo
+# dizinleri (485 ve 13 takipli dosya) ve yoksayilmamali.
+/voices/
+/profiles/
+/sessions/
+/sidecars/
+/memories/
+/SOUL.md
