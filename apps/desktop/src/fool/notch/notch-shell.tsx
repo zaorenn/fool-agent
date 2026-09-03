@@ -411,7 +411,10 @@ export function NotchShell() {
     const onDown = (event: KeyboardEvent) => {
       const action = ptOnKeyDown(ptt.current, event, Date.now(), pttCode)
 
-      if (action?.type === 'start' && sessionActive) {
+      if (action?.type === 'start') {
+        if (!sessionActive) {
+          setSessionActive(true)
+        }
         // Tuşun varsayılan davranışını yutuyoruz ki basılı tutuş başka bir
         // kısayolu tetiklemesin.
         event.preventDefault()

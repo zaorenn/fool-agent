@@ -32,7 +32,7 @@ import type { NotchStatus } from './use-notch-voice'
  * saniyeler içinde ``listening`` oluyor. Uzun tutmak, kulağın hatalı bir turdan
  * sonra o kadar süre sağır kalması demek.
  */
-export const WAKE_TURN_START_GRACE_MS = 5_000
+export const WAKE_TURN_START_GRACE_MS = 10_000
 
 export type WakeTurnStep =
   /** Tur bitti -- dinleyici geri açılmalı. */

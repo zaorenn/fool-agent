@@ -623,6 +623,9 @@ def resolve_requested_provider(requested: Optional[str] = None) -> str:
     if env_provider:
         return env_provider
 
+    if _getenv("LM_BASE_URL") or _getenv("LM_API_KEY"):
+        return "lmstudio"
+
     return "auto"
 
 

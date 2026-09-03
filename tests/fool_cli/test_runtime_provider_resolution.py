@@ -1527,14 +1527,12 @@ def test_auto_provider_with_known_cloud_base_url_still_uses_anthropic(monkeypatc
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
 
-    monkeypatch.setattr(
-        rp,
-        "_get_model_config",
-        lambda: {
-            "provider": "auto",
-            "base_url": "https://api.anthropic.com",
-        },
-    )
+    model_mock = {
+        "provider": "auto",
+        "base_url": "https://api.anthropic.com",
+    }
+    monkeypatch.setattr(rp, "_get_model_config", lambda: model_mock)
+    monkeypatch.setattr("fool_cli.config.load_config", lambda: {"model": model_mock})
 
     resolved = rp.resolve_runtime_provider()
 

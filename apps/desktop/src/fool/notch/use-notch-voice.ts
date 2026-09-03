@@ -346,7 +346,7 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
     //
     // ``failed`` ENGELLEMIYOR: isinmayi bekleyemedigimiz icin kullaniciyi
     // susturmak, isinmamis bir motorla konusmasina izin vermekten kotu.
-    if ($voiceWarm.get() === 'warming') {
+    if (activation !== 'auto' && $voiceWarm.get() === 'warming') {
       // Metin KULLANICIYA gorunuyor.
       setError('Warming up the voice — one moment')
       setStatus('idle')
@@ -934,6 +934,7 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
 
   const beginWakeTurn = useCallback(async () => {
     setError(null)
+    setStatus('speaking')
 
     // Onay METNİ seçili TTS motorundan geçiyor: kullanıcı hangi sesi seçtiyse
     // uyandırma da onunla konuşuyor. Sabit bir ses dosyası, seçilen sesle

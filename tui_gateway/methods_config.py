@@ -391,9 +391,10 @@ def _(rid, params: dict) -> dict:
         api_key_text = "" if callable(api_key) else str(api_key or "").strip()
         credential_ok = (
             callable(api_key)
-            or api_key_text in {"aws-sdk", "no-key-required"}
+            or api_key_text in {"aws-sdk", "no-key-required", "dummy-lm-api-key"}
             or has_usable_secret(api_key_text)
             or bool(runtime.get("command"))
+            or provider == "lmstudio"
         )
 
         if not credential_ok:

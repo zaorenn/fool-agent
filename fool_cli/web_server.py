@@ -18971,6 +18971,65 @@ def _demo() -> None:
     print("web_server parent-death watchdog self-check: OK")
 
 
+def _check_windows_vcredist() -> None:
+    """On Windows, check that msvcp140.dll is present and >= 14.38.0.0.
+
+    Older runtimes (e.g. 14.28 shipped with older Windows or Office) crash
+    instantly with 0xC0000005 (access violation) when native C++ extensions
+    like faster-whisper / ctranslate2 are loaded.
+    """
+    if sys.platform != "win32":
+        return
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        system32 = os.path.join(os.environ.get("SystemRoot", r"C:\Windows"), "System32")
+        dll_path = os.path.join(system32, "msvcp140.dll")
+        if not os.path.isfile(dll_path):
+            _log.warning("msvcp140.dll not found in %s; Visual C++ Redistributable may be missing", system32)
+            return
+
+        size = ctypes.windll.version.GetFileVersionInfoSizeW(dll_path, None)
+        if size <= 0:
+            return
+        buffer = ctypes.create_string_buffer(size)
+        if not ctypes.windll.version.GetFileVersionInfoW(dll_path, 0, size, buffer):
+            return
+
+        p_val = wintypes.LPVOID()
+        val_len = wintypes.UINT()
+        if not ctypes.windll.version.VerQueryValueW(
+            buffer, "\\", ctypes.byref(p_val), ctypes.byref(val_len)
+        ):
+            return
+
+        class VS_FIXEDFILEINFO(ctypes.Structure):
+            _fields_ = [
+                ("dwSignature", wintypes.DWORD),
+                ("dwStrucVersion", wintypes.DWORD),
+                ("dwFileVersionMS", wintypes.DWORD),
+                ("dwFileVersionLS", wintypes.DWORD),
+            ]
+
+        info = VS_FIXEDFILEINFO.from_address(p_val.value)
+        major = info.dwFileVersionMS >> 16
+        minor = info.dwFileVersionMS & 0xFFFF
+        build = info.dwFileVersionLS >> 16
+        patch = info.dwFileVersionLS & 0xFFFF
+        ver_tuple = (major, minor, build, patch)
+        if ver_tuple < (14, 38, 0, 0):
+            _log.warning(
+                "Detected MSVCP140.dll version %d.%d.%d.%d (< 14.38.0.0). "
+                "C++ extensions (faster-whisper, torch) may crash with 0xc0000005. "
+                "Please install Microsoft Visual C++ 2015-2022 Redistributable (x64) from "
+                "https://aka.ms/vs/17/release/vc_redist.x64.exe",
+                major, minor, build, patch,
+            )
+    except Exception as exc:
+        _log.debug("VC++ Redistributable check skipped: %s", exc)
+
+
 def start_server(
     host: str = "127.0.0.1",
     port: int = 9119,
@@ -18995,6 +19054,7 @@ def start_server(
     ``ssh_session_token`` and ``ssh_owner_nonce`` are process-local Desktop SSH
     bootstrap state. Neither is persisted or exported to child processes.
     """
+    _check_windows_vcredist()
     _apply_ssh_session_token(ssh_session_token or "")
     _apply_ssh_owner_nonce(ssh_owner_nonce)
 

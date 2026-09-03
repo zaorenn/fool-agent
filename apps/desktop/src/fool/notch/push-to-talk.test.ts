@@ -109,6 +109,32 @@ describe('bas-konuş', () => {
     expect(onKeyDown(state, { code: 'F13' }, 0, 'F13')).toEqual({ type: 'start' })
     expect(onKeyUp(state, { code: 'F13' }, MIN_HOLD_MS + 1, 'F13')).toMatchObject({ type: 'commit' })
   })
+
+  it('kombo bağlamada değiştirici bırakıldığında da commit tetiklenir', () => {
+    const state = createPushToTalkState()
+    const binding = 'Shift+ControlRight'
+
+    expect(
+      onKeyDown(state, { code: 'ControlRight', shiftKey: true, ctrlKey: true }, 0, binding)
+    ).toEqual({ type: 'start' })
+
+    expect(
+      onKeyUp(state, { code: 'ShiftLeft', shiftKey: false, ctrlKey: true }, MIN_HOLD_MS + 50, binding)
+    ).toMatchObject({ type: 'commit' })
+  })
+
+  it('kombo bağlamada ana tuş bırakıldığında commit tetiklenir', () => {
+    const state = createPushToTalkState()
+    const binding = 'Shift+ControlRight'
+
+    expect(
+      onKeyDown(state, { code: 'ControlRight', shiftKey: true, ctrlKey: true }, 0, binding)
+    ).toEqual({ type: 'start' })
+
+    expect(
+      onKeyUp(state, { code: 'ControlRight', shiftKey: true, ctrlKey: false }, MIN_HOLD_MS + 50, binding)
+    ).toMatchObject({ type: 'commit' })
+  })
 })
 
 /**

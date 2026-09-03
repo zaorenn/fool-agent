@@ -2040,6 +2040,84 @@ function Install-SystemPackages {
     }
 }
 
+function Install-VCRedist {
+    $dllPath = "$env:windir\System32\msvcp140.dll"
+    $needInstall = $false
+    $minVer = [version]"14.38.0.0"
+
+    Write-Info "Checking Visual C++ 2015-2022 Redistributable..."
+    if (Test-Path $dllPath) {
+        try {
+            $verInfo = (Get-Item $dllPath).VersionInfo
+            $currentVer = [version]"$($verInfo.FileMajorPart).$($verInfo.FileMinorPart).$($verInfo.FileBuildPart).$($verInfo.FilePrivatePart)"
+            if ($currentVer -lt $minVer) {
+                Write-Warn "Found MSVCP140.dll version $currentVer (< 14.38.0.0 required by C++ extensions like faster-whisper/ctranslate2)."
+                $needInstall = $true
+            } else {
+                Write-Success "Visual C++ runtime is up to date (MSVCP140.dll $currentVer)."
+                return $true
+            }
+        } catch {
+            $needInstall = $true
+        }
+    } else {
+        Write-Warn "MSVCP140.dll not found in $env:windir\System32."
+        $needInstall = $true
+    }
+
+    if ($needInstall) {
+        Write-Info "Installing latest Microsoft Visual C++ 2015-2022 Redistributable (x64)..."
+        $hasWinget = Get-Command winget -ErrorAction SilentlyContinue
+        $installed = $false
+
+        if ($hasWinget) {
+            try {
+                Write-Info "Attempting installation via winget..."
+                $proc = Start-Process winget -ArgumentList "install", "Microsoft.VCRedist.2015+.x64", "--silent", "--accept-package-agreements", "--accept-source-agreements" -Wait -PassThru -NoNewWindow
+                if ($proc.ExitCode -eq 0 -or $proc.ExitCode -eq 3010) {
+                    $installed = $true
+                }
+            } catch {
+                Write-Warn "winget install failed, falling back to direct download."
+            }
+        }
+
+        if (-not $installed) {
+            $dest = Join-Path $env:TEMP "vc_redist.x64.exe"
+            $url = "https://aka.ms/vs/17/release/vc_redist.x64.exe"
+            Write-Info "Downloading Visual C++ Redistributable from $url..."
+            try {
+                [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+                Invoke-WebRequest -Uri $url -OutFile $dest -UseBasicParsing
+                Write-Info "Running VC++ Redistributable installer silently..."
+                $proc = Start-Process -FilePath $dest -ArgumentList "/passive", "/norestart" -Wait -PassThru
+                if ($proc.ExitCode -eq 0 -or $proc.ExitCode -eq 3010) {
+                    $installed = $true
+                } else {
+                    Write-Warn "VC++ Redistributable installer exited with code $($proc.ExitCode)."
+                }
+            } catch {
+                Write-Warn "Failed to download/install Visual C++ Redistributable: $_"
+            } finally {
+                if (Test-Path $dest) { Remove-Item $dest -Force -ErrorAction SilentlyContinue }
+            }
+        }
+
+        if (Test-Path $dllPath) {
+            try {
+                $verInfo = (Get-Item $dllPath).VersionInfo
+                $currentVer = [version]"$($verInfo.FileMajorPart).$($verInfo.FileMinorPart).$($verInfo.FileBuildPart).$($verInfo.FilePrivatePart)"
+                if ($currentVer -ge $minVer) {
+                    Write-Success "Visual C++ Redistributable successfully installed (MSVCP140.dll $currentVer)."
+                    return $true
+                }
+            } catch {}
+        }
+        Write-Warn "Could not verify MSVCP140.dll >= 14.38. If backend crashes with 0xc0000005, please install https://aka.ms/vs/17/release/vc_redist.x64.exe manually."
+    }
+    return $true
+}
+
 # ============================================================================
 # Installation
 # ============================================================================
@@ -5042,6 +5120,7 @@ $InstallStages = @(
     @{ Name = "git";              Title = "Installing Git";                       Category = "prereqs";      NeedsUserInput = $false; Worker = "Stage-Git" }
     @{ Name = "node";             Title = "Detecting Node.js";                    Category = "prereqs";      NeedsUserInput = $false; Worker = "Stage-Node" }
     @{ Name = "system-packages";  Title = "Installing ripgrep and ffmpeg";        Category = "prereqs";      NeedsUserInput = $false; Worker = "Stage-SystemPackages" }
+    @{ Name = "vcredist";         Title = "Verifying Visual C++ Redistributable"; Category = "prereqs";      NeedsUserInput = $false; Worker = "Stage-VCRedist" }
     @{ Name = "repository";       Title = "Cloning The Fool repository";            Category = "install";      NeedsUserInput = $false; Worker = "Stage-Repository" }
     @{ Name = "venv";             Title = "Creating Python virtual environment";  Category = "install";      NeedsUserInput = $false; Worker = "Stage-Venv" }
     @{ Name = "dependencies";     Title = "Installing Python dependencies";       Category = "install";      NeedsUserInput = $false; Worker = "Stage-Dependencies" }
@@ -5095,6 +5174,7 @@ function Stage-Node             {
     }
 }
 function Stage-SystemPackages   { Install-SystemPackages }
+function Stage-VCRedist         { Install-VCRedist }
 function Stage-Repository       { Install-Repository }
 function Stage-Venv             { Resolve-UvCmd; Install-Venv }
 function Stage-Dependencies     { Resolve-UvCmd; Install-Dependencies }

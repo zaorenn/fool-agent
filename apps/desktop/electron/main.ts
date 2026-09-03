@@ -11314,6 +11314,7 @@ function installPushToTalkForwarding(win) {
     }
 
     target.webContents.send('fool:notch:ptt', {
+      code: input.code,
       repeat: Boolean(input.isAutoRepeat),
       type: input.type === 'keyUp' ? 'up' : 'down',
       // Degistiriciler de gidiyor: ``Shift+ControlRight`` gibi bir baglama

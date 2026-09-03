@@ -14631,6 +14631,11 @@ def _wake_test_finish(test_id: str, payload: dict) -> None:
     finally:
         reset_transport(token)
 
+    try:
+        _broadcast_global_event("wake.test.result", payload)
+    except Exception:
+        pass
+
 
 def _consume_wake_test(transport, matched_phrase: str) -> bool:
     """Saptamayı süren bir sınama karşılıyor mu?
@@ -14640,7 +14645,7 @@ def _consume_wake_test(transport, matched_phrase: str) -> bool:
     with _WAKE_TEST_LOCK:
         live = _WAKE_TEST
 
-        if live is None or live["transport"] is not transport:
+        if live is None:
             return False
 
         test_id = live["id"]
@@ -14672,7 +14677,7 @@ def _(rid, params: dict) -> dict:
 
     transport = current_transport() or _stdio_transport
 
-    if not owns_listener(transport) or not is_listening():
+    if not is_listening():
         return _err(
             rid,
             4029,

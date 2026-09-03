@@ -7,6 +7,7 @@ import { contextBridge, ipcRenderer, webUtils } from 'electron'
  * bayraklar tasinmazsa centik, odak disinda hic eslesme goremezdi.
  */
 interface ForwardedPtt {
+  code?: string
   altKey?: boolean
   ctrlKey?: boolean
   metaKey?: boolean

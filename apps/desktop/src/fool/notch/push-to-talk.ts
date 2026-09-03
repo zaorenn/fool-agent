@@ -21,7 +21,7 @@
  *    düzeninden etkilenmez.
  */
 
-import { bindingMatches, DEFAULT_PTT_CODE, parsePttBinding } from './ptt-binding'
+import { bindingMatches, DEFAULT_PTT_CODE, modifierFamily, parsePttBinding } from './ptt-binding'
 
 /**
  * Bas-konuş için varsayılan fiziksel tuş: sağ Ctrl.
@@ -120,15 +120,16 @@ export function onKeyUp(
   now: number,
   binding: string = PUSH_TO_TALK_CODE
 ): null | PushToTalkEvent {
-  // BIRAKMA yalnizca ``code``a bakiyor -- degistiricilere DEGIL, ve bu bilerek.
-  //
-  // ``Shift+ControlRight`` bagliyken kullanici tuslari SIRAYLA birakiyor. Once
-  // Shift birakilirsa ControlRight'in ``keyup``i ``shiftKey: false`` ile
-  // geliyor: tam eslesme istemek o olayi ELERDI, ``heldSince`` takili kalirdi
-  // ve mikrofon sonsuza kadar acik kalirdi -- bu dosyanin var olma sebebi olan
-  // hatanin ta kendisi. Basis zaten tam eslesmeden gecti; birakmayi kacirmak
-  // hicbir seyi guvenli yapmiyor.
-  if (event.code !== parsePttBinding(binding).code || state.heldSince === null) {
+  if (state.heldSince === null) {
+    return null
+  }
+
+  const parsed = parsePttBinding(binding)
+  const codeMatches = event.code === parsed.code
+  const family = modifierFamily(event.code)
+  const modifierMatches = Boolean(family && parsed[family])
+
+  if (!codeMatches && !modifierMatches) {
     return null
   }
 

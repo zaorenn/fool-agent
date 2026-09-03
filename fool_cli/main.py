@@ -995,6 +995,8 @@ def _has_any_provider_configured() -> bool:
     else:
         _model_name = ""
     _has_hermes_config = _model_name and _model_name != _DEFAULT_MODEL
+    if isinstance(model_cfg, dict) and (model_cfg.get("provider") or model_cfg.get("base_url")):
+        return True
 
     # Check env vars (may be set by .env or shell).
     # OPENAI_BASE_URL alone counts — local models (vLLM, llama.cpp, etc.)
@@ -1008,10 +1010,13 @@ def _has_any_provider_configured() -> bool:
         "ANTHROPIC_API_KEY",
         "ANTHROPIC_TOKEN",
         "OPENAI_BASE_URL",
+        "LM_BASE_URL",
     }
     for pconfig in PROVIDER_REGISTRY.values():
         if pconfig.auth_type == "api_key":
             provider_env_vars.update(pconfig.api_key_env_vars)
+            if pconfig.base_url_env_var:
+                provider_env_vars.add(pconfig.base_url_env_var)
     if any(os.getenv(v) for v in provider_env_vars):
         return True
 

@@ -2286,6 +2286,12 @@ def resolve_provider(
     except ImportError:
         pass  # boto3 not installed — skip Bedrock auto-detection
 
+    # LM Studio / Local endpoint — detect via LM_BASE_URL or LM_API_KEY
+    lm_base = os.environ.get("LM_BASE_URL", "").strip()
+    lm_key = _scoped_key_env("LM_API_KEY")
+    if lm_base or has_usable_secret(lm_key):
+        return "lmstudio"
+
     raise AuthError(
         "No inference provider configured. Run 'fool model' to choose a "
         "provider and model, or set an API key (OPENROUTER_API_KEY, "

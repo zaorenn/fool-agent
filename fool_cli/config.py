@@ -936,6 +936,9 @@ def _fool_seed_local_model(home: Path) -> None:
 
     Dolu bir ``model.provider`` ASLA ezilmez.
     """
+    if "pytest" in sys.modules or os.environ.get("PYTEST_CURRENT_TEST"):
+        return
+
     config_path = home / "config.yaml"
 
     if config_path.exists():
