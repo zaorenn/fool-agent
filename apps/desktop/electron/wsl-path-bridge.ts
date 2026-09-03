@@ -51,7 +51,8 @@ export function resolveDefaultWslDistro(): string {
       encoding: 'utf8',
       env: { ...process.env, WSL_UTF8: '1' },
       timeout: 2000,
-      windowsHide: true
+      windowsHide: true,
+      stdio: ['ignore', 'pipe', 'ignore']
     })
 
     cachedDistro = parseDefaultDistro(out) || 'Ubuntu'
