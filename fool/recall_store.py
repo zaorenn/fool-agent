@@ -347,11 +347,6 @@ class RecallStore:
         getirirdi -- yeni bir bağımlılık, yeni bir süreç, eşitlenmesi gereken
         ikinci bir hakikat.
         """
-        try:
-            import numpy as np
-        except Exception:
-            return [], None
-
         rows = self._db.execute(
             "SELECT e.memory_id AS id, e.dim AS dim, e.vec AS vec FROM embeddings e"
             " JOIN memories m ON m.id = e.memory_id"
@@ -364,23 +359,31 @@ class RecallStore:
 
         dim = int(rows[0]["dim"])
         ids: list[int] = []
-        flat: list[float] = []
+        vecs: list[list[float]] = []
+
+        import array
 
         for row in rows:
             if int(row["dim"]) != dim:
                 continue
 
             ids.append(int(row["id"]))
-            flat.extend(np.frombuffer(row["vec"], dtype="float32").tolist())
+            arr = array.array("f")
+            arr.frombytes(row["vec"])
+            vecs.append(arr.tolist())
 
         if not ids:
             return [], None
 
-        matrix = np.asarray(flat, dtype="float32").reshape(len(ids), dim)
-        norms = np.linalg.norm(matrix, axis=1, keepdims=True)
-        norms[norms == 0] = 1.0
+        try:
+            import numpy as np
 
-        return ids, matrix / norms
+            matrix = np.asarray(vecs, dtype="float32")
+            norms = np.linalg.norm(matrix, axis=1, keepdims=True)
+            norms[norms == 0] = 1.0
+            return ids, matrix / norms
+        except Exception:
+            return ids, vecs
 
     def forget(self, memory_id: int) -> bool:
         cursor = self._db.execute("DELETE FROM memories WHERE id = ?", (memory_id,))
@@ -476,11 +479,23 @@ class RecallStore:
         if matrix is None or not ids:
             return {}
 
-        import numpy as np
+        try:
+            import numpy as np
 
-        q = np.asarray(vectors[0], dtype="float32")
-        norm = float(np.linalg.norm(q)) or 1.0
-        sims = matrix @ (q / norm)
+            q = np.asarray(vectors[0], dtype="float32")
+            norm = float(np.linalg.norm(q)) or 1.0
+            sims = (matrix @ (q / norm)).tolist()
+        except Exception:
+            import math
+
+            q_raw = [float(x) for x in vectors[0]]
+            q_norm = math.sqrt(sum(x * x for x in q_raw)) or 1.0
+            q_unit = [x / q_norm for x in q_raw]
+            sims = []
+            for v in matrix:
+                v_norm = math.sqrt(sum(x * x for x in v)) or 1.0
+                dot = sum(a * b for a, b in zip(v, q_unit))
+                sims.append(dot / v_norm)
 
         # Kosinüs değerleri dar bir bantta toplanıyor (0,3-0,7): ham hâlde
         # aralarındaki fark sıralamayı taşımıyor. Aday kümesi içinde
