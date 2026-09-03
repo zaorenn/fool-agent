@@ -244,19 +244,26 @@ export function resolveVenvFoolCommand(
   }
 
   const scriptsDir = dirname(resolved)
+  let venvRoot: string | null = null
+  let root: string | null = null
 
-  if (basename(scriptsDir).toLowerCase() !== 'scripts') {
+  if (basename(scriptsDir).toLowerCase() === 'scripts') {
+    venvRoot = dirname(scriptsDir)
+    root = dirname(venvRoot)
+  } else if (basename(scriptsDir).toLowerCase() === 'bin') {
+    const possibleRoot = dirname(scriptsDir)
+    const possibleVenv = resolvePath(possibleRoot, 'venv')
+    if (directoryExists(possibleVenv)) {
+      venvRoot = possibleVenv
+      root = possibleRoot
+    }
+  }
+
+  if (!venvRoot || !root) {
     return null
   }
 
-  const venvRoot = dirname(scriptsDir)
   const python = getVenvPython(venvRoot)
-
-  if (!fileExists(python)) {
-    return null
-  }
-
-  const root = dirname(venvRoot)
 
   if (
     !canImportFoolCli(python, {

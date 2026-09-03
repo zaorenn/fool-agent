@@ -95,10 +95,21 @@ test('resolveVenvFoolCommand: returns null when the basename is not fool/fool.ex
   assert.equal(resolveVenvFoolCommand('/root/venv/Scripts/python.exe', [], deps), null)
 })
 
-test('resolveVenvFoolCommand: returns null when the parent dir is not Scripts', () => {
+test('resolveVenvFoolCommand: returns null when the parent dir is not Scripts and no venv sibling exists', () => {
   const deps = makeDeps()
 
   assert.equal(resolveVenvFoolCommand('/root/venv/bin/fool.exe', [], deps), null)
+})
+
+test('resolveVenvFoolCommand: resolves <root>/bin/fool.exe when <root>/venv exists alongside it', () => {
+  const deps = makeDeps({
+    directoryExists: p => p === '/root/venv'
+  })
+
+  const result = resolveVenvFoolCommand('/root/bin/fool.exe', ['serve'], deps)
+  assert.ok(result, 'must resolve <root>/bin/fool.exe when <root>/venv is present')
+  assert.equal(result.command, '/root/venv/Scripts/python.exe')
+  assert.equal(result.root, '/root')
 })
 
 test('resolveVenvFoolCommand: returns null when the venv python does not exist on disk', () => {
