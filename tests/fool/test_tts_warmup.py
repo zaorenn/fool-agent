@@ -105,6 +105,7 @@ def test_ikinci_cagri_YENI_is_baslatmiyor(monkeypatch) -> None:
 def test_ISINMIS_motor_yeniden_isitilmiyor(monkeypatch) -> None:
     calls: list[str] = []
     monkeypatch.setattr(tts_warmup, "_warm_now", lambda p: calls.append(p))
+    monkeypatch.setattr(tts_warmup, "_still_resident", lambda p: True)
 
     tts_warmup.warm("kokoro")
     _wait()
