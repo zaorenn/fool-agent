@@ -454,6 +454,7 @@ py-modules = [
   "fool_logging",
   "utils",
   "mcp_serve",
+  "mini_swe_runner",
 ]
 
 [tool.setuptools.packages.find]
