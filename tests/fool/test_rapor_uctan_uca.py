@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
 import subprocess
 import zipfile
 from pathlib import Path
@@ -174,7 +175,10 @@ def test_engelli_taslak_URETILMIYOR(calisma) -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skipif(donusturucu_bul() is None, reason="LibreOffice yok")
+@pytest.mark.skipif(
+    donusturucu_bul() is None or shutil.which("pdftotext") is None,
+    reason="LibreOffice veya pdftotext yok",
+)
 def test_uctan_uca_DOCX_ve_PDF_uretiliyor_ve_sayfa_araligi_TUTUYOR(calisma) -> None:
     """Kullanıcının iş akışının tamamı, ölçülmüş sayfa sayısıyla."""
     _taslagi_kur()
@@ -218,7 +222,10 @@ def test_uctan_uca_DOCX_ve_PDF_uretiliyor_ve_sayfa_araligi_TUTUYOR(calisma) -> N
     assert {t for _, t in bulunan} == {sayfa}
 
 
-@pytest.mark.skipif(donusturucu_bul() is None, reason="LibreOffice yok")
+@pytest.mark.skipif(
+    donusturucu_bul() is None or shutil.which("pdftotext") is None,
+    reason="LibreOffice veya pdftotext yok",
+)
 def test_uretilen_belgenin_bicimi_YONERGEDEN_geliyor(calisma) -> None:
     """Biçim modelin dikkatine değil, şartnameye bağlı."""
     _taslagi_kur()
