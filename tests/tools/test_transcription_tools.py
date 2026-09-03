@@ -1230,3 +1230,80 @@ class TestRunCommandSttIdleTimeout:
             )
 
         assert "starting pass 1" in (excinfo.value.stderr or "")
+
+
+class TestFasterWhisperCPUZorlamasi:
+    """``_should_force_faster_whisper_cpu`` -- native crash koruması.
+
+    Ölçülen çöküş: Windows + AMD entegre GPU (Ryzen 7 7840HS / Radeon 780M,
+    NVIDIA yok) makinesinde ``device="auto"`` yolu STATUS_STACK_BUFFER_OVERRUN
+    (0xC0000409) ile TÜM SÜRECİ çökertti -- SYSTRAN/faster-whisper#1293'ün
+    bildirdiği tam kod. ctranslate2'nin CUDA keşif kodu, Python'un
+    try/except'inin YAKALAYAMAYACAĞI bir native abort üretiyor: çöküş, o
+    except bloğuna hiç ulaşılamadan oluyor.
+
+    Önceden bu koruma yalnızca macOS/Rosetta içindi (Apple Silicon'da benzer
+    bir native-abort sınıfı için). AMD/Intel entegre GPU'lar Windows
+    dizüstülerinin büyük çoğunluğunda var, yani bu dar bir durum değil.
+    """
+
+    def test_windows_NVIDIA_yoksa_CPU_zorlaniyor(self, monkeypatch):
+        from tools import transcription_tools as tt
+
+        monkeypatch.setattr(tt.platform, "system", lambda: "Windows")
+        monkeypatch.setattr(tt.shutil, "which", lambda name: None)
+
+        assert tt._should_force_faster_whisper_cpu() is True
+
+    def test_windows_NVIDIA_varsa_CPU_ZORLANMIYOR(self, monkeypatch):
+        # GPU hizindan yararlanan mevcut kullanicilarin davranisi BOZULMAMALI.
+        from tools import transcription_tools as tt
+
+        monkeypatch.setattr(tt.platform, "system", lambda: "Windows")
+        fake_path = "C:" + chr(92) + "Windows" + chr(92) + "System32" + chr(92) + "nvidia-smi.exe"
+        monkeypatch.setattr(
+            tt.shutil, "which",
+            lambda name: fake_path if name == "nvidia-smi" else None,
+        )
+
+        assert tt._should_force_faster_whisper_cpu() is False
+
+    def test_linux_platform_ETKILENMIYOR(self, monkeypatch):
+        # Bu koruma Windows + macOS icin olculdu; Linux'a genellenmemeli --
+        # oradaki ctranslate2 CUDA kesfi ayri bir davranis sinifi.
+        from tools import transcription_tools as tt
+
+        monkeypatch.setattr(tt.platform, "system", lambda: "Linux")
+        monkeypatch.setattr(tt.shutil, "which", lambda name: None)
+
+        assert tt._should_force_faster_whisper_cpu() is False
+
+    def test_macos_rosetta_davranisi_KORUNUYOR(self, monkeypatch):
+        # Regresyon: Windows dalini eklerken macOS/Rosetta dalini bozmamali.
+        from tools import transcription_tools as tt
+
+        monkeypatch.setattr(tt.platform, "system", lambda: "Darwin")
+        monkeypatch.setattr(tt.platform, "machine", lambda: "arm64")
+
+        assert tt._should_force_faster_whisper_cpu() is True
+
+    def test_has_nvidia_gpu_ctranslate2_KESIF_KODUNU_TETIKLEMIYOR(self):
+        # Guvenligin dayandigi temel: fonksiyon GOVDESI (docstring haric --
+        # oradaki aciklama metni "ctranslate2" kelimesini dogal olarak
+        # iceriyor) shutil.which disinda hicbir sey cagirmiyor, yani
+        # ctranslate2/faster_whisper'i import ya da cagri yolunu HIC
+        # tetiklemiyor, crash riski tasimiyor.
+        import ast
+        import inspect
+
+        from tools import transcription_tools as tt
+
+        src = inspect.getsource(tt._has_nvidia_gpu)
+        tree = ast.parse(src)
+        fn = tree.body[0]
+        govde_satirlari = fn.body[1:]  # ilk eleman docstring
+        govde = ast.unparse(ast.Module(body=govde_satirlari, type_ignores=[]))
+
+        assert "ctranslate2" not in govde
+        assert "WhisperModel" not in govde
+        assert "shutil.which" in govde

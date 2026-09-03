@@ -1639,15 +1639,43 @@ def _sysctl_value(name: str) -> str:
         return ""
 
 
+def _has_nvidia_gpu() -> bool:
+    """NVIDIA GPU/surucu varligini GUVENLE kontrol et.
+
+    Sadece PATH'te bir isim arama -- ctranslate2'nin KENDI GPU kesif kodunu
+    (asagidaki crash'in KAYNAGI) hic tetiklemiyor. ``nvidia-smi`` NVIDIA
+    surucusu kurulu HER Windows/Linux makinesinde otomatik olarak PATH'e
+    eklenir; kurulu degilse yoktur -- calistirmaya bile gerek yok.
+    """
+    return shutil.which("nvidia-smi") is not None
+
+
 def _should_force_faster_whisper_cpu() -> bool:
     """Avoid faster-whisper device autodetection paths known to hard-abort.
 
     On Apple Silicon, especially when Python is running as x86_64 under
-    Rosetta, ctranslate2's ``device=\"auto\"`` path can abort inside native
+    Rosetta, ctranslate2's ``device="auto"`` path can abort inside native
     code before Python can catch an exception.  Force CPU so local STT remains
     reliable for gateway voice messages.
+
+    On Windows, the SAME class of native abort was measured on a machine
+    with an AMD integrated GPU (Ryzen 7 7840HS / Radeon 780M) and no NVIDIA
+    hardware: STATUS_STACK_BUFFER_OVERRUN (0xC0000409) -- the exact code
+    SYSTRAN/faster-whisper#1293 reports for this device path. ctranslate2's
+    ``device="auto"`` probes for CUDA, and on a non-NVIDIA GPU that probe can
+    abort the whole process instead of raising a Python exception the
+    try/except below could catch -- the crash happens BEFORE we ever reach
+    it. AMD/Intel integrated GPUs ship on most Windows laptops, so this
+    isn't a narrow case; it's the common one. Checking for ``nvidia-smi``
+    first is a filesystem lookup, not a call into ctranslate2, so it carries
+    none of that risk.
     """
-    if platform.system() != "Darwin":
+    system = platform.system()
+
+    if system == "Windows":
+        return not _has_nvidia_gpu()
+
+    if system != "Darwin":
         return False
 
     machine = platform.machine().lower()
@@ -1790,7 +1818,7 @@ def _load_local_whisper_model(model_name: str, device: str = "auto", compute_typ
     any CUDA library load failure fall back to CPU + int8.
     """
     force_cpu = _should_force_faster_whisper_cpu()
-    if force_cpu:
+    if force_cpu and platform.system() == "Darwin":
         # Importing ctranslate2/faster-whisper itself can abort on some
         # Apple Silicon/Rosetta installs because multiple Intel OpenMP runtimes
         # are already loaded.  Set this before importing faster_whisper so the
@@ -1799,9 +1827,15 @@ def _load_local_whisper_model(model_name: str, device: str = "auto", compute_typ
 
     from faster_whisper import WhisperModel
     if force_cpu:
+        reason = (
+            "Apple Silicon/Rosetta detected"
+            if platform.system() == "Darwin"
+            else "no NVIDIA GPU detected"
+        )
         logger.info(
-            "Apple Silicon/Rosetta detected — loading faster-whisper on CPU "
-            "(int8) to avoid native device autodetection crashes"
+            "%s — loading faster-whisper on CPU (int8) to avoid native "
+            "device autodetection crashes",
+            reason,
         )
         return WhisperModel(model_name, device="cpu", compute_type="int8")
 

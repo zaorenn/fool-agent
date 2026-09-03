@@ -58,6 +58,7 @@ Skip reasons:
 from __future__ import annotations
 
 import base64
+import functools
 import hashlib
 import hmac
 import json
@@ -162,10 +163,23 @@ def _verify_password(password: str, encoded: str) -> bool:
     return hmac.compare_digest(actual, expected)
 
 
-# A fixed dummy hash used to spend ~equal time when the username is
-# unknown, so an attacker can't distinguish "no such user" (fast) from
-# "wrong password" (slow scrypt) by timing. Computed once at import.
-_DUMMY_HASH = hash_password("dummy-password-for-constant-time-verify")
+@functools.lru_cache(maxsize=1)
+def _dummy_hash() -> str:
+    """Fixed dummy hash for constant-time-ish login timing.
+
+    Spends ~equal time when the username is unknown, so an attacker
+    can't distinguish "no such user" (fast) from "wrong password" (slow
+    scrypt) by timing.
+
+    Lazy and cached, NOT computed at import: the previous module-level
+    ``hash_password()`` call meant this whole plugin failed to import on
+    any Python build where ``hashlib.scrypt`` is missing (measured: a
+    Windows install where ``AttributeError: module 'hashlib' has no
+    attribute 'scrypt'`` took the ENTIRE plugin down at startup, not just
+    password login). A dashboard.basic_auth-less install never reaches
+    this code path, so it never pays that cost.
+    """
+    return hash_password("dummy-password-for-constant-time-verify")
 
 
 # ---------------------------------------------------------------------------
@@ -252,7 +266,7 @@ class BasicAuthProvider(DashboardAuthProvider):
         username_ok = hmac.compare_digest(
             username.encode("utf-8"), self._username.encode("utf-8")
         )
-        target_hash = self._password_hash if username_ok else _DUMMY_HASH
+        target_hash = self._password_hash if username_ok else _dummy_hash()
         password_ok = _verify_password(password, target_hash)
         if not (username_ok and password_ok):
             raise InvalidCredentialsError("invalid username or password")

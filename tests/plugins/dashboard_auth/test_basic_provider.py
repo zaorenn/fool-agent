@@ -219,3 +219,38 @@ class TestRegister:
         p2 = ctx2.register_dashboard_auth_provider.call_args.args[0]
         s = p1.complete_password_login(username="admin", password="hunter2")
         assert p2.verify_session(access_token=s.access_token) is not None
+
+
+class TestScryptEksikOlsaBileModulYukleniyor:
+    """``hashlib.scrypt`` olmayan bir Python derlemesinde bile plugin YUKLENMELI.
+
+    Ölçülen çöküş: laptopta ``Failed to load plugin ' + chr(39) + 'basic' + chr(39) + ': module ' + chr(39) + 'hashlib' + chr(39) + '
+    has no attribute ' + chr(39) + 'scrypt' + chr(39) + '``. Sebep, artık kaldırılmış bir MODUL
+    SEVIYESI cagriydi: ``_DUMMY_HASH = hash_password(...)`` import ANINDA
+    calisiyordu, yani scrypt eksik olan HER Python derlemesinde plugin'in
+    TAMAMI import edilemiyordu -- dashboard basic-auth kullanmayan biri
+    icin bile.
+
+    Duzeltme dummy hash' + chr(39) + 'i lazy + cached yapti (``functools.lru_cache``):
+    import artik scrypt' + chr(39) + 'i hic cagirmiyor, yalnizca GERCEK bir
+    ``complete_password_login`` cagrisi cagiriyor -- ki o noktada scrypt
+    zaten KACINILMAZ.
+    """
+
+    def test_scrypt_yokken_modul_import_ediliyor(self, monkeypatch):
+        import hashlib
+        import importlib
+
+        original_scrypt = hashlib.scrypt
+        monkeypatch.delattr(hashlib, "scrypt")
+        try:
+            reloaded = importlib.reload(basic_plugin)
+            assert reloaded is not None
+        finally:
+            monkeypatch.setattr(hashlib, "scrypt", original_scrypt, raising=False)
+            importlib.reload(basic_plugin)
+
+    def test_dummy_hash_onbelleklenmis_ve_TEK_hesaplaniyor(self):
+        # lru_cache: art arda cagrilar AYNI degeri donmeli, tekrar tekrar
+        # scrypt calistirmamali (performans + davranis tutarliligi).
+        assert basic_plugin._dummy_hash() == basic_plugin._dummy_hash()
