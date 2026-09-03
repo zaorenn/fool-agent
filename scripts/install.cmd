@@ -1,27 +1,27 @@
 @echo off
 REM ============================================================================
-REM Hermes Agent Installer for Windows (CMD wrapper)
+REM The Fool Installer for Windows (CMD wrapper)
 REM ============================================================================
 REM This batch file launches the PowerShell installer for users running CMD.
-REM
-REM Usage:
-REM   curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.cmd -o install.cmd && install.cmd && del install.cmd
-REM
-REM Or if you're already in PowerShell, use the direct command instead:
-REM   iex (irm https://hermes-agent.nousresearch.com/install.ps1)
-REM ============================================================================
+
+setlocal
+set "SCRIPT_DIR=%~dp0"
 
 echo.
-echo  Hermes Agent Installer
+echo  The Fool Installer
 echo  Launching PowerShell installer...
 echo.
 
-powershell -ExecutionPolicy ByPass -NoProfile -Command "iex (irm https://hermes-agent.nousresearch.com/install.ps1)"
+if exist "%SCRIPT_DIR%install.ps1" (
+    powershell -ExecutionPolicy ByPass -NoProfile -File "%SCRIPT_DIR%install.ps1" %*
+) else (
+    powershell -ExecutionPolicy ByPass -NoProfile -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; & ([scriptblock]::Create((iwr -UseBasicParsing 'https://raw.githubusercontent.com/zaorenn/fool-agent/main/scripts/install.ps1').Content))" %*
+)
 
 if %ERRORLEVEL% NEQ 0 (
     echo.
     echo  Installation failed. Please try running PowerShell directly:
-    echo    powershell -ExecutionPolicy ByPass -c "iex (irm https://hermes-agent.nousresearch.com/install.ps1)"
+    echo    powershell -ExecutionPolicy ByPass -File "%SCRIPT_DIR%install.ps1"
     echo.
     pause
     exit /b 1
