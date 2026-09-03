@@ -29,6 +29,8 @@ from __future__ import annotations
 
 import logging
 import os
+import platform
+import shutil
 from typing import Any, Final, Literal
 
 logger = logging.getLogger(__name__)
@@ -41,11 +43,36 @@ VALID: Final[frozenset[str]] = frozenset({"auto", "cuda", "cpu"})
 _cuda_available: bool | None = None
 
 
+def _windows_without_nvidia() -> bool:
+    """Windows + PATH'te ``nvidia-smi`` yok mu?
+
+    ``shutil.which`` bir PATH araması -- torch/onnxruntime import etmez,
+    CUDA/GPU sürücüsünü hiç dokunmaz. Bu yüzden aşağıdaki kontrolün
+    KORUDUĞU riski kendisi taşımıyor.
+    """
+    return platform.system() == "Windows" and shutil.which("nvidia-smi") is None
+
+
 def cuda_available() -> bool:
     """CUDA gerçekten kullanılabilir mi? Süreç başına bir kez ölçülür.
 
     Sırayla dener: torch (Chatterbox/Qwen3 bunu kullanıyor), sonra
     onnxruntime (Piper bunu kullanıyor). İkisi de yoksa ``False``.
+
+    BUG (measured directly): bu fonksiyon önceden doğrudan
+    ``torch.cuda.is_available()`` çağırıyordu -- hiçbir ön kontrol
+    olmadan. Windows + AMD/Intel entegre GPU'lu bir makinede (NVIDIA
+    yok) o çağrı native bir crash (STATUS_STACK_BUFFER_OVERRUN,
+    SYSTRAN/faster-whisper#1293 ile aynı sınıf) ile TÜM backend
+    sürecini götürüyordu -- bir Python istisnası değil, ``except
+    Exception`` altındaki hiçbir kod buna asla ulaşmıyordu.
+
+    Bu fonksiyon her TTS isteğinde ``resolve()`` üzerinden çağrılıyor
+    (sağlayıcıya özel eklenti düzeltmelerinden TAMAMEN bağımsız bir
+    yol) -- laptop-ta chatterbox/kokoro/f5tts/kyutai/styletts2/qwen3
+    eklentileri düzeltildikten SONRA bile "backend stopped" 10 saniyede
+    bir tekrar etmeye devam etmesinin sebebi buydu: gerçek çağrı
+    buradan geliyordu, eklentilerin kendi ``device`` seçiminden değil.
     """
     global _cuda_available
     if _cuda_available is not None:
@@ -53,6 +80,10 @@ def cuda_available() -> bool:
 
     # Kullanıcı açıkça kapatmışsa sorgulamaya hiç girme.
     if os.environ.get("FOOL_TTS_FORCE_CPU", "").strip().lower() in {"1", "true", "yes"}:
+        _cuda_available = False
+        return False
+
+    if _windows_without_nvidia():
         _cuda_available = False
         return False
 
