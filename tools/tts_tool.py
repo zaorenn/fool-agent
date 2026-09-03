@@ -353,6 +353,11 @@ def _point_espeak_at_bundled_data() -> None:
     if configured and os.path.isfile(os.path.join(configured, "phontab")):
         return
 
+    # Geçersiz bir yol varsa KORUNMUYOR: espeak-ng veri yüklemesi
+    # başarısız olunca C tarafında exit() çağırıyor ve bütün arka uç çöküyor.
+    if configured:
+        os.environ.pop("ESPEAK_DATA_PATH", None)
+
     try:
         import piper
 

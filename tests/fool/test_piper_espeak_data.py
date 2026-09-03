@@ -33,7 +33,16 @@ def clean_env(monkeypatch):
     monkeypatch.delenv("ESPEAK_DATA_PATH", raising=False)
 
 
-def test_paketteki_veri_yolu_AYARLANIYOR() -> None:
+def test_paketteki_veri_yolu_AYARLANIYOR(monkeypatch, tmp_path) -> None:
+    try:
+        import piper
+    except ImportError:
+        piper = type(sys)("piper")
+        piper.__file__ = str(tmp_path / "piper" / "__init__.py")
+        monkeypatch.setitem(sys.modules, "piper", piper)
+        (tmp_path / "piper" / "espeak-ng-data").mkdir(parents=True)
+        (tmp_path / "piper" / "espeak-ng-data" / "phontab").write_text("x", encoding="utf-8")
+
     _point_espeak_at_bundled_data()
 
     path = os.environ.get("ESPEAK_DATA_PATH")
@@ -65,6 +74,15 @@ def test_GECERSIZ_ayar_duzeltiliyor(monkeypatch, tmp_path) -> None:
     sonradan kayboldu. espeak-ng veri yüklemesi başarısız olunca C tarafında
     ``exit()`` çağırıyor -- yani bedeli bütün arka uç.
     """
+    try:
+        import piper
+    except ImportError:
+        piper = type(sys)("piper")
+        piper.__file__ = str(tmp_path / "piper" / "__init__.py")
+        monkeypatch.setitem(sys.modules, "piper", piper)
+        (tmp_path / "piper" / "espeak-ng-data").mkdir(parents=True)
+        (tmp_path / "piper" / "espeak-ng-data" / "phontab").write_text("x", encoding="utf-8")
+
     monkeypatch.setenv("ESPEAK_DATA_PATH", str(tmp_path / "yok-boyle-bir-yer"))
 
     _point_espeak_at_bundled_data()
@@ -78,9 +96,13 @@ def test_GECERSIZ_ayar_duzeltiliyor(monkeypatch, tmp_path) -> None:
 def test_YARIM_klasor_gosterilmiyor(monkeypatch, tmp_path) -> None:
     """Boş bir klasörü göstermek, hiçbir şey göstermemekle aynı hatayı verir --
     o yüzden klasörün kendisi değil ``phontab`` sınanıyor."""
-    import piper
+    try:
+        import piper
+    except ImportError:
+        piper = type(sys)("piper")
+        monkeypatch.setitem(sys.modules, "piper", piper)
 
-    monkeypatch.setattr(piper, "__file__", str(tmp_path / "piper" / "__init__.py"))
+    monkeypatch.setattr(piper, "__file__", str(tmp_path / "piper" / "__init__.py"), raising=False)
     (tmp_path / "piper" / "espeak-ng-data").mkdir(parents=True)
 
     _point_espeak_at_bundled_data()
