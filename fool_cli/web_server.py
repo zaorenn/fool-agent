@@ -246,7 +246,10 @@ def _parent_start_markers_match(actual: str, expected: str) -> bool:
 
     dotnet_ticks_at_unix_epoch = 621_355_968_000_000_000
     actual_unix_ms = (dotnet_ticks - dotnet_ticks_at_unix_epoch) // 10_000
-    return actual_unix_ms == expected_unix_ms
+    # Floating-point rounding between Electron's process.getCreationTime()
+    # and Windows FILETIME can differ by a few milliseconds. A 2000ms tolerance
+    # avoids false-positive process kills while still protecting against PID reuse.
+    return abs(actual_unix_ms - expected_unix_ms) <= 2000
 
 
 # ---------------------------------------------------------------------------

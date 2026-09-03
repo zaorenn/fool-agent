@@ -34,7 +34,7 @@ def test_parent_watchdog_accepts_electron_windows_creation_time_marker():
 
 def test_parent_watchdog_rejects_reused_pid_with_different_windows_creation_time():
     unix_ms = 1_723_456_789_123
-    next_process_ticks = 621_355_968_000_000_000 + (unix_ms + 1) * 10_000
+    next_process_ticks = 621_355_968_000_000_000 + (unix_ms + 5_000) * 10_000
 
     assert (
         _is_serve_orphaned(
