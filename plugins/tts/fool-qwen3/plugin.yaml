@@ -1,0 +1,10 @@
+name: fool-qwen3
+version: 1.0.0
+description: "Qwen3-TTS (Alibaba, Apache-2.0) — tek modelde 10 dil ve 9 konuşmacı. Türkçe desteklenmiyor. Kendi izole ortamında çalışır: transformers==4.57.3 ana ortamdaki huggingface-hub'ı kırardı."
+author: Fool Labs
+kind: backend
+provides_tts_providers:
+  - qwen3
+# NOT: python_dependencies BILEREK bos. Bu motor ana ortama kurulamaz --
+# bagimliliklari fool/sidecar.py uzerinden kendi venv'ine kuruluyor.
+python_dependencies: []

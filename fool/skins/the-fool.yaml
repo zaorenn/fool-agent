@@ -1,0 +1,145 @@
+# The Fool — crimson kimlik skin'i
+#
+# Bu TEK dosya CLI + TUI + masaüstü GUI'yi aynı anda temalıyor. skin_engine.py
+# şöyle diyor: "A skin dropped in ~/.hermes/skins/ therefore themes all three
+# surfaces at once — the theme analogue of the plugin SDK."
+#
+# Yani markanın görsel tarafı için upstream'de TEK BİR SATIR bile değişmiyor.
+# Bölge B: sıfır çakışma, kalıcı.
+#
+# Kurulum: ~/.fool/skins/the-fool.yaml
+# Etkinleştirme: config.yaml -> display.skin: the-fool
+
+name: the-fool
+description: Crimson accents over deep neutrals — The Fool
+
+# Koyu terminaller için yazıldı. Açık terminaller için light_colors aşağıda.
+colors:
+  # Zemin — TUI durum çubuğu ve masaüstü GUI tüm paletini bundan türetiyor.
+  background: "#100B0D"
+
+  banner_border: "#D01A3F"
+  banner_title: "#E8365A"
+  banner_accent: "#E8365A"
+  banner_dim: "#8A6068"
+  banner_text: "#F2E9EC"
+
+  ui_accent: "#E8365A"
+  ui_label: "#C4566E"
+  ui_ok: "#4CAF7D"
+  ui_error: "#F2545B"
+  ui_warn: "#E8A33D"
+  ui_tool: "#E8365A"
+  ui_thinking: "#A84257"
+
+  diff_added: "#122B1C"
+  diff_removed: "#2E1116"
+  diff_added_word: "#4CAF7D"
+  diff_removed_word: "#F2545B"
+
+  syntax_string: "#E8365A"
+  syntax_number: "#F2E9EC"
+  syntax_keyword: "#D01A3F"
+  syntax_comment: "#8A6068"
+
+  prompt: "#F2E9EC"
+  input_rule: "#D01A3F"
+  response_border: "#E8365A"
+
+  status_bar_bg: "#0C0809"
+  status_bar_text: "#C9B8BD"
+  status_bar_strong: "#E8365A"
+  status_bar_dim: "#7A6067"
+  status_bar_good: "#4CAF7D"
+  status_bar_warn: "#E8A33D"
+  status_bar_bad: "#E8703D"
+  status_bar_critical: "#F2545B"
+
+  session_label: "#C4566E"
+  session_border: "#7A6067"
+
+  voice_status_bg: "#0C0809"
+  selection_bg: "#3A1A24"
+  completion_menu_bg: "#181114"
+  completion_menu_current_bg: "#3A1A24"
+  completion_menu_meta_bg: "#181114"
+  completion_menu_meta_current_bg: "#3A1A24"
+
+# Açık terminal varyantı — aynı anahtarlar, koyu metin.
+light_colors:
+  background: "#FBF8F8"
+  banner_border: "#A81532"
+  banner_title: "#B01030"
+  banner_accent: "#B01030"
+  banner_dim: "#8A6068"
+  banner_text: "#1A1416"
+  ui_accent: "#B01030"
+  ui_label: "#8E2440"
+  ui_ok: "#2E7D52"
+  ui_error: "#B3261E"
+  ui_warn: "#B5761F"
+  ui_tool: "#B01030"
+  ui_thinking: "#8E2440"
+  prompt: "#1A1416"
+  input_rule: "#A81532"
+  response_border: "#B01030"
+  status_bar_bg: "#F6EFF1"
+  status_bar_text: "#3A2A2F"
+  status_bar_strong: "#B01030"
+  status_bar_dim: "#8A6068"
+  session_label: "#8E2440"
+  session_border: "#8A6068"
+
+# Bekleme/düşünme animasyonu — Fool arkanası (0 numaralı kart: başlangıç,
+# sıçrayış, sonsuz olasılık).
+spinner:
+  waiting_faces:
+    - "(๏)"
+    - "(◔)"
+    - "(◕)"
+  thinking_faces:
+    - "(✦)"
+    - "(✧)"
+    - "(◈)"
+  thinking_verbs:
+    - "wandering"
+    - "leaping"
+    - "dreaming"
+    - "unfolding"
+    - "divining"
+  wings:
+    - ["⟪✦", "✦⟫"]
+    - ["⟪◈", "◈⟫"]
+
+# Markanın metin yüzü.
+branding:
+  agent_name: "The Fool"
+  welcome: "The Fool — step off the cliff."
+  goodbye: "The road goes on. ✦"
+  response_label: " ✦ The Fool "
+  prompt_symbol: "❯"
+  help_header: "(✦)? Commands"
+
+# Banner sanati -- skin uzerinden override ediliyor (banner_logo /
+# banner_hero). Upstream'in kaduseus asasi ve HERMES blok harfleri metin
+# donusumune YAKALANMIYOR: braille/blok karakter cizimi, harf degil.
+# skin_engine bu iki alani destekledigi icin upstream'e hic dokunulmadi.
+banner_logo: |
+  [bold #E8365A]████████╗██╗  ██╗███████╗    ███████╗ ██████╗  ██████╗ ██╗     [/]
+  [bold #E8365A]╚══██╔══╝██║  ██║██╔════╝    ██╔════╝██╔═══██╗██╔═══██╗██║     [/]
+  [#D01A3F]   ██║   ███████║█████╗      █████╗  ██║   ██║██║   ██║██║     [/]
+  [#D01A3F]   ██║   ██╔══██║██╔══╝      ██╔══╝  ██║   ██║██║   ██║██║     [/]
+  [#A8122F]   ██║   ██║  ██║███████╗    ██║     ╚██████╔╝╚██████╔╝███████╗[/]
+  [#A8122F]   ╚═╝   ╚═╝  ╚═╝╚══════╝    ╚═╝      ╚═════╝  ╚═════╝ ╚══════╝[/]
+
+banner_hero: |
+  [#E8365A]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣶⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+  [#E8365A]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣴⣿⣿⣷⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+  [#D01A3F]⠀⠀⠀⠀⠀⠀⠀⢀⣤⣾⣿⣿⣿⣿⣿⣷⣤⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+  [#D01A3F]⠀⠀⠀⠀⢠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⡄⠀⠀⠀⠀⠀⠀⠀[/]
+  [#D01A3F]⠈⠻⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠟⠁⠀⠀⠀⠀⠀[/]
+  [#A8122F]⠀⠀⠀⠈⠛⠿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠿⠛⠁⠀⠀⠀⠀⠀⠀⠀⠀[/]
+  [#A8122F]⠀⠀⠀⠀⠀⠀⠀⠈⠛⠿⣿⣿⣿⠿⠛⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+  [#8A6068]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⠛⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+
+tool_prefix: "┊"

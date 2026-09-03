@@ -1,0 +1,9 @@
+name: fool-chatterbox
+version: 1.0.0
+description: "Chatterbox (Resemble AI, MIT) — yerel, gerçekçi TTS. 0.5B; üreticinin kör testinde ElevenLabs'a 65.3%/24.5% tercih edildi. Sıfır-atış ses klonlama ve duygu yoğunluğu kontrolü. CUDA'da hızlı, CPU'da çalışır."
+author: Fool Labs
+kind: backend
+provides_tts_providers:
+  - chatterbox
+python_dependencies:
+  - chatterbox-tts==0.1.7

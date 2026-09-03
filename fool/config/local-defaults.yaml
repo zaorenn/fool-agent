@@ -1,0 +1,54 @@
+# The Fool — yerel model varsayılanları (LM Studio)
+#
+# Bu dosya `~/.fool/config.yaml` içine birleştirilir.
+#
+# NEDEN LM STUDIO
+# ---------------
+# LM Studio OpenAI-uyumlu bir sunucu açıyor ve Hermes'te BİRİNCİ SINIF
+# sağlayıcı olarak destekleniyor (`provider: "lmstudio"`, varsayılan uç
+# http://127.0.0.1:1234/v1). Yani sıfır dikişle çalışıyor.
+#
+# MODEL SEÇİMİ
+#   qwen/qwen3.5-9b tool calling destekliyor (finish_reason: tool_calls) ve
+#   16 GB VRAM'e rahat sığıyor. Bu kritik: The Fool ajan bir uygulama —
+#   dosya düzenliyor, komut çalıştırıyor. Tool calling desteklemeyen bir
+#   model yalnızca sohbet edebilir, iş yapamaz.
+#
+#   Daha az VRAM'in varsa gemma-4-e4b gibi daha hafif bir modele geç;
+#   daha fazlası varsa daha büyük bir modelle kalite artar. Modeli
+#   LM Studio'da yükleyip buradaki `default` değerini /v1/models
+#   çıktısındaki kimlikle eşleştirmen yeterli.
+
+model:
+  default: "qwen/qwen3.5-9b"
+  provider: "lmstudio"
+
+# YARDIMCI (auxiliary) GÖREVLER
+# -----------------------------
+# Başlık üretimi, bağlam sıkıştırma, oturum arama gibi yan görevler
+# varsayılan olarak "auto" ile uzak sağlayıcıları deniyor. Kimlik bilgisi
+# olmayan yerel bir kurulumda bu şu logu üretiyordu:
+#
+#   Auxiliary: marking openrouter unhealthy (payment / credit error)
+#   Auxiliary: marking nous unhealthy (payment / credit error)
+#   Auxiliary title_generation: connection error ... all fallbacks exhausted
+#
+# Hepsini yerele sabitliyoruz: gereksiz ağ denemesi yok, sessiz hata yok.
+auxiliary:
+  title_generation:
+    provider: "lmstudio"
+    model: "qwen/qwen3.5-9b"
+  compression:
+    provider: "lmstudio"
+    model: "qwen/qwen3.5-9b"
+  session_search:
+    provider: "lmstudio"
+    model: "qwen/qwen3.5-9b"
+  web_extract:
+    provider: "lmstudio"
+    model: "qwen/qwen3.5-9b"
+
+display:
+  # CLI + TUI + masaüstü GUI'yi aynı anda temalar.
+  skin: "the-fool"
+  tool_progress: all
