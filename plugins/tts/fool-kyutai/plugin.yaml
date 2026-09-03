@@ -1,0 +1,8 @@
+name: fool-kyutai
+version: 1.0.0
+description: "Kyutai TTS (kyutai/tts-1.6b-en_fr) — canlı konuşma için tasarlanmış, metin okumak için değil. Adaylar arasında en yalın bağımlılık ağacı (Python 3.13'te 38 paket). Kendi izole ortamında çalışır: torch sürümünü kendisi pinliyor."
+author: Fool Labs
+kind: backend
+provides_tts_providers:
+  - kyutai
+python_dependencies: []

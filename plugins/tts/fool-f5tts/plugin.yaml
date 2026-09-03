@@ -1,0 +1,8 @@
+name: fool-f5tts
+version: 1.0.0
+description: "F5-TTS (flow matching) — birkaç saniyelik referans kayıttan ses klonluyor. Diğer yerel motorlar sabit seslerle geliyor; bu 'kendi sesimle konuşsun' isteğinin karşılığı. Kendi izole ortamında çalışır."
+author: Fool Labs
+kind: backend
+provides_tts_providers:
+  - f5tts
+python_dependencies: []

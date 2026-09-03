@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 340" width="1200" height="340" role="img" aria-label="The Fool — a local-first AI agent with a voice">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0C0C10"/>
+      <stop offset="55%" stop-color="#121016"/>
+      <stop offset="100%" stop-color="#17111A"/>
+    </linearGradient>
+
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#C41E3A"/>
+      <stop offset="100%" stop-color="#E8536B"/>
+    </linearGradient>
+
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#C41E3A" stop-opacity="0.42"/>
+      <stop offset="100%" stop-color="#C41E3A" stop-opacity="0"/>
+    </radialGradient>
+
+    <linearGradient id="fade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#C41E3A" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#C41E3A" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#C41E3A" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="340" fill="url(#bg)"/>
+
+  <!-- the notch: the app's signature surface, drawn where it actually lives -->
+  <g>
+    <rect x="470" y="0" width="260" height="30" rx="0" fill="#000" opacity="0.55"/>
+    <path d="M470 0 h260 v14 a16 16 0 0 1 -16 16 h-228 a16 16 0 0 1 -16 -16 z" fill="#08080B"/>
+    <circle cx="600" cy="15" r="3.5" fill="url(#accent)"/>
+    <rect x="472" y="29" width="256" height="1" fill="url(#fade)"/>
+  </g>
+
+  <ellipse cx="600" cy="30" rx="300" ry="60" fill="url(#glow)"/>
+
+  <g transform="translate(140, 132)">
+    <text x="0" y="0"
+          font-family="Georgia, 'Times New Roman', serif"
+          font-size="76" font-weight="400" letter-spacing="-1.5" fill="#EFEBE6">The Fool</text>
+
+    <rect x="3" y="24" width="62" height="3" rx="1.5" fill="url(#accent)"/>
+
+    <text x="0" y="72"
+          font-family="'Segoe UI', -apple-system, Helvetica, Arial, sans-serif"
+          font-size="21" fill="#9A97A4">A local-first AI agent you can talk to.</text>
+
+    <text x="0" y="112"
+          font-family="'Segoe UI', -apple-system, Helvetica, Arial, sans-serif"
+          font-size="15.5" fill="#6E6B78">Desktop · CLI · TUI &#160;&#8226;&#160; runs on your own hardware &#160;&#8226;&#160; no account, no telemetry</text>
+  </g>
+
+  <!-- waveform: the voice surface, as a quiet mark rather than an illustration -->
+  <g transform="translate(880, 196)" opacity="0.92">
+    <rect x="0"   y="-9"  width="3" height="18" rx="1.5" fill="#C41E3A" opacity="0.30"/>
+    <rect x="12"  y="-17" width="3" height="34" rx="1.5" fill="#C41E3A" opacity="0.45"/>
+    <rect x="24"  y="-28" width="3" height="56" rx="1.5" fill="#C41E3A" opacity="0.62"/>
+    <rect x="36"  y="-40" width="3" height="80" rx="1.5" fill="#D5324B" opacity="0.85"/>
+    <rect x="48"  y="-52" width="3" height="104" rx="1.5" fill="#E8536B"/>
+    <rect x="60"  y="-40" width="3" height="80" rx="1.5" fill="#D5324B" opacity="0.85"/>
+    <rect x="72"  y="-28" width="3" height="56" rx="1.5" fill="#C41E3A" opacity="0.62"/>
+    <rect x="84"  y="-17" width="3" height="34" rx="1.5" fill="#C41E3A" opacity="0.45"/>
+    <rect x="96"  y="-9"  width="3" height="18" rx="1.5" fill="#C41E3A" opacity="0.30"/>
+    <rect x="108" y="-14" width="3" height="28" rx="1.5" fill="#C41E3A" opacity="0.38"/>
+    <rect x="120" y="-24" width="3" height="48" rx="1.5" fill="#C41E3A" opacity="0.55"/>
+    <rect x="132" y="-34" width="3" height="68" rx="1.5" fill="#D5324B" opacity="0.72"/>
+    <rect x="144" y="-22" width="3" height="44" rx="1.5" fill="#C41E3A" opacity="0.52"/>
+    <rect x="156" y="-12" width="3" height="24" rx="1.5" fill="#C41E3A" opacity="0.34"/>
+    <rect x="168" y="-7"  width="3" height="14" rx="1.5" fill="#C41E3A" opacity="0.26"/>
+  </g>
+
+  <rect x="0" y="337" width="1200" height="3" fill="url(#accent)" opacity="0.85"/>
+</svg>
