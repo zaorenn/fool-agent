@@ -33,6 +33,8 @@ from __future__ import annotations
 import json
 import logging
 import os
+import platform
+import shutil
 from typing import Any, Dict, List, Optional
 
 from agent.tts_provider import TTSProvider
@@ -231,6 +233,31 @@ class ChatterboxTTSProvider(TTSProvider):
         device = str(cfg.get("device") or "auto").strip().lower()
         if device not in ("auto", "cpu", "cuda"):
             device = "auto"
+
+        # BUG (measured directly): on Windows with no NVIDIA GPU, sending
+        # "auto" through unresolved lets the sidecar's own
+        # torch.cuda.is_available() run inside its process -- and on an
+        # AMD/Intel integrated GPU that probe was observed taking the whole
+        # backend down with a native crash (same STATUS_STACK_BUFFER_OVERRUN
+        # class as SYSTRAN/faster-whisper#1293, fixed for the whisper path in
+        # tools/transcription_tools.py). It reproduced ONLY through the
+        # desktop app -- a bare `fool serve` never touches this code path
+        # before a TTS request is made, so the crash-loop only showed up
+        # once the GUI triggered a synthesis.
+        #
+        # This does not change the design above: an "auto"/"cuda" pick on a
+        # machine that DOES have an NVIDIA GPU is still sent unresolved, so
+        # the sidecar's own CUDA-enabled torch still decides. Only the
+        # no-NVIDIA-on-Windows case is pinned to "cpu" here -- before the
+        # sidecar ever imports torch -- and the check itself is a PATH
+        # lookup (shutil.which), never a torch/CUDA call, so it carries none
+        # of the crash risk it is guarding against.
+        if (
+            device in ("auto", "cuda")
+            and platform.system() == "Windows"
+            and shutil.which("nvidia-smi") is None
+        ):
+            device = "cpu"
 
         from fool import engine_host, sidecar
 

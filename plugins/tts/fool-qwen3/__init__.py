@@ -47,6 +47,8 @@ from __future__ import annotations
 import json
 import logging
 import os
+import platform
+import shutil
 from typing import Any, Dict, List, Optional
 
 from agent.tts_provider import TTSProvider
@@ -200,6 +202,20 @@ class Qwen3TTSProvider(TTSProvider):
         device = str(config.get("device") or "auto").strip().lower()
         if device not in ("auto", "cpu", "cuda"):
             device = "auto"
+
+        # Windows + no NVIDIA GPU: same native-crash class as
+        # SYSTRAN/faster-whisper#1293, fixed for whisper in
+        # tools/transcription_tools.py and documented in full in
+        # plugins/tts/fool-chatterbox/__init__.py. shutil.which is a PATH
+        # lookup, never a torch/CUDA call -- it carries none of the risk
+        # it is guarding against, and an actual NVIDIA machine is untouched
+        # (device stays "auto"/"cuda", the sidecar's own torch still decides).
+        if (
+            device in ("auto", "cuda")
+            and platform.system() == "Windows"
+            and shutil.which("nvidia-smi") is None
+        ):
+            device = "cpu"
 
         # Model WAV yaziyor. Istenen bicim farkliysa uzantiyi zorlamak yerine
         # WAV'a yazip yolu oyle donduruyoruz: ABC "desteklenmiyorsa en yakinini

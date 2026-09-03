@@ -240,6 +240,26 @@ class TestSslPolitikasi_KENDINI_ONARIYOR:
         assert "one-way" in PS1
         assert "python.org/downloads" in PS1
 
+    def test_probe_YALNIZCA_ssl_DEGIL_hashlib_scrypt_de_siniyor(self):
+        """Ölçülen hata: Akıllı Uygulama Denetimi native uzantıları SEÇİCİ
+        engelliyor. Bir makinede ``_ssl.pyd`` geçti ama ``hashlib.pyd`` HALA
+        engellendi -- yalnızca ``import ssl`` sınayan onarım bunu YEŞİL
+        rapor etti, gerçek kırık ancak dashboard basic-auth eklentisi
+        yüklenmeye çalışılınca (aylar sonra, ayrı bir hata mesajıyla,
+        gerçek sebepten iki katman uzakta) yüzeye çıktı.
+        """
+        blok = PS1[PS1.index("function Test-PythonSsl"):]
+        blok = blok[: blok.index("function ", 10)]
+
+        assert "import hashlib" in blok
+        assert "hashlib.scrypt(" in blok
+
+    def test_politika_tespiti_hashlib_ENGELINI_de_taniyor(self):
+        blok = PS1[PS1.index("function Test-SslBlockedByPolicy"):]
+        blok = blok[: blok.index("function ", 10)]
+
+        assert "_ssl|hashlib" in blok
+
 
 class TestMarkaTemasi_KURULUYOR:
     """Marka teması her iki kurulumda da yüklenip seçilmeli.

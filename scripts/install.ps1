@@ -4488,11 +4488,22 @@ function Test-PythonSsl {
     # Returns @{ Ok = <bool>; Output = <string> }. HTTPS is load-bearing for
     # every later step, so this is checked before the long dependency sync
     # rather than discovered in the middle of it.
+    #
+    # Also probes hashlib.scrypt, not just ssl -- Smart App Control was
+    # measured blocking native extensions SELECTIVELY: on one machine it let
+    # _ssl.pyd through (this probe would have reported Ok) but still blocked
+    # hashlib.pyd. That failure was silent at install time; it only surfaced
+    # later as "Failed to load plugin 'basic': module 'hashlib' has no
+    # attribute 'scrypt'" the first time the dashboard basic-auth plugin
+    # (stdlib scrypt, no third-party dependency) tried to import. Folding the
+    # check in here means a blocked hashlib triggers the SAME repair path as
+    # a blocked ssl, instead of surfacing as a separate, harder-to-diagnose
+    # bug two layers away from its actual cause.
     param([string]$PythonExe)
 
     $prevEAP = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
-    $out = & $PythonExe -c "import ssl" 2>&1
+    $out = & $PythonExe -c "import ssl; import hashlib; hashlib.scrypt(b'x', salt=b'y', n=2, r=1, p=1, dklen=1)" 2>&1
     $code = $LASTEXITCODE
     $ErrorActionPreference = $prevEAP
 
@@ -4501,10 +4512,11 @@ function Test-PythonSsl {
 
 function Test-SslBlockedByPolicy {
     # Windows localizes the message, so the policy wording alone is not a
-    # reliable marker. `_ssl` plus a failed import is.
+    # reliable marker. A blocked native extension -- `_ssl` or `hashlib`,
+    # both probed above -- plus a failed import is.
     param([string]$ProbeOutput)
 
-    return ($ProbeOutput -match "_ssl") -and
+    return ($ProbeOutput -match "_ssl|hashlib") -and
            ($ProbeOutput -match "DLL load failed|Application Control|Uygulama Denetimi")
 }
 
