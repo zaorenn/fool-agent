@@ -194,7 +194,10 @@ MEMORY_GUIDANCE = (
     "will still matter later.\n"
     "Prioritize what reduces future user steering — the most valuable memory is one "
     "that prevents the user from having to correct or remind you again. "
-    "User preferences and recurring corrections matter more than procedural task details.\n"
+    "User preferences, music/media tastes, topic interests, and recurring corrections "
+    "matter more than procedural task details.\n"
+    "BE PROACTIVE: When the user shares personal tastes, hobbies, or preferred topics, "
+    "save them to memory so future conversations naturally align with their personality.\n"
     "Do NOT save task progress, session outcomes, completed-work logs, or temporary TODO "
     "state to memory; use session_search to recall those from past transcripts. "
     "Specifically: do not record PR numbers, issue numbers, commit SHAs, 'fixed bug X', "
@@ -2019,15 +2022,15 @@ def _build_skills_system_prompt_inner(
     # their parent.
     demoted = frozenset(
         cat for cat in skills_by_category
-        if cat.split("/", 1)[0] in (compact_categories or frozenset())
+        if (compact_categories is not None and ("*" in compact_categories or "all" in compact_categories))
+        or cat.split("/", 1)[0] in (compact_categories or frozenset())
     )
 
     hidden_note = ""
     if demoted:
         hidden_note = (
-            "\n(Categories marked [names only] are outside the current coding "
-            "context, so their descriptions are omitted — the skills work "
-            "normally and load with skill_view(name) as usual.)"
+            "\n(Categories marked [names only] show skill names only to save tokens — "
+            "the skills work normally and load with skill_view(name) as usual.)"
         )
 
     if not skills_by_category:

@@ -121,6 +121,40 @@ If you are unsure a subcommand exists, run `fool --help` first instead of
 guessing. Guessing costs the user a whole turn."""
 
 
+SPOTIFY_GUIDANCE: Final[str] = """CONTROLLING SPOTIFY AND PLAYING MUSIC
+When the user asks to play music on Spotify or wants to connect their account:
+1. If Spotify tools are available (spotify_play, spotify_search, etc.):
+   Use them directly to search and play tracks, playlists, or albums in the background.
+2. If the user asks how to connect Spotify:
+   Explain the steps clearly:
+   - Run `fool tools` in the terminal and toggle Spotify on.
+   - Run `fool auth spotify` to log in with your Spotify Developer App (Redirect URI: http://127.0.0.1:43827/spotify/callback).
+   - Once connected, Spotify can be controlled in the background.
+3. If Spotify is not yet configured or authenticated, but the user wants to play a song immediately:
+   Launch the song or search directly in their local Spotify desktop application:
+       Windows: cmd /c start spotify:search:<song+name>
+       macOS:   open "spotify:search:<song+name>"
+       Linux:   xdg-open "spotify:search:<song+name>"
+   Then inform the user in one sentence."""
+
+
+WEB_SEARCH_AND_NEWS_GUIDANCE: Final[str] = """WEB SEARCH AND READING NEWS
+For web research, looking up current events, or reading news:
+- Always use your `web_search` and `web_extract` tools directly. They run native HTTP requests and return clean text in seconds.
+- NEVER launch `browser_navigate`, `browser_exec`, or a full Chrome browser just to search or read an article. Use browser automation ONLY if the user explicitly asks for visual interactions, clicking on web pages, or filling forms.
+- When the user asks for news (e.g. "bugünün teknoloji haberleri", "günün haberlerini oku"), search for current articles using `web_search`, extract relevant details, and provide a concise, high-signal bulleted summary."""
+
+
+YOUTUBE_MEDIA_GUIDANCE: Final[str] = """YOUTUBE AND MEDIA PLAYBACK
+When the user asks to open or play a video from YouTube (or wants an interesting video from the homepage/topics):
+1. Use `web_search` to find the exact YouTube video URL matching their request (e.g. `web_search query="site:youtube.com <topic>"`).
+2. Open the video in their default browser with autoplay:
+       Windows: cmd /c start "" "https://www.youtube.com/watch?v=VIDEO_ID&autoplay=1"
+       macOS:   open "https://www.youtube.com/watch?v=VIDEO_ID&autoplay=1"
+       Linux:   xdg-open "https://www.youtube.com/watch?v=VIDEO_ID&autoplay=1"
+3. Report what video you found and opened, with a brief summary of what it is about."""
+
+
 COMPANION_GUIDANCE: Final[str] = """TALKING LIKE A PERSON
 Most of what you get here is not a task. It is someone talking. Answer the way
 a friend would: short, direct, warm, in their language and register.
@@ -189,6 +223,9 @@ def blocks() -> tuple[str, ...]:
         # "telegram'i kur" diyor, kabuk hata veriyor, ajan baska bir varyant
         # deniyor; tur bosa gidiyor ve kullanici ajani beceriksiz saniyor.
         CLI_COMMAND_GUIDANCE,
+        SPOTIFY_GUIDANCE,
+        WEB_SEARCH_AND_NEWS_GUIDANCE,
+        YOUTUBE_MEDIA_GUIDANCE,
         # AKTIF sesli kipin personasi. Iki kip var ve gereksinimleri
         # celisiyor: arkadas kipinde cogu tur bir gorev degil (kisa, sicak),
         # Jarvis kipinde gercekten is yapiliyor (kisa, kesin, yikici islemden

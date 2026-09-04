@@ -551,6 +551,18 @@ PROVIDER_REGISTRY: Dict[str, ProviderConfig] = {
         api_key_env_vars=("AZURE_FOUNDRY_API_KEY",),
         base_url_env_var="AZURE_FOUNDRY_BASE_URL",
     ),
+    "antigravity": ProviderConfig(
+        id="antigravity",
+        name="Google Antigravity",
+        auth_type="oauth_external",
+        portal_base_url="",
+        inference_base_url="https://generativelanguage.googleapis.com/v1beta",
+        client_id="",
+        scope="",
+        extra={},
+        api_key_env_vars=("ANTIGRAVITY_API_KEY", "GOOGLE_API_KEY", "GEMINI_API_KEY"),
+        base_url_env_var="ANTIGRAVITY_BASE_URL",
+    ),
 }
 
 # Auto-extend PROVIDER_REGISTRY with any api-key provider registered in
@@ -2876,6 +2888,90 @@ def get_qwen_auth_status() -> Dict[str, Any]:
         return {
             "logged_in": False,
             "auth_file": str(auth_path),
+            "error": str(exc),
+        }
+
+
+# =============================================================================
+# Google Antigravity auth — local session or API key
+# =============================================================================
+
+DEFAULT_ANTIGRAVITY_BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
+
+
+def _antigravity_cli_path() -> Optional[Path]:
+    """Find local Antigravity binary / agentapi path."""
+    import shutil
+    cmd = shutil.which("agentapi") or shutil.which("agentapi.bat")
+    if cmd:
+        return Path(cmd)
+    if sys.platform == "win32":
+        candidate = Path.home() / ".gemini" / "antigravity" / "bin" / "agentapi.bat"
+        if candidate.exists():
+            return candidate
+    else:
+        candidate = Path.home() / ".gemini" / "antigravity" / "bin" / "agentapi"
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def _read_antigravity_tokens() -> Dict[str, Any]:
+    """Check for Antigravity local CLI or session state."""
+    # 1. Check local agentapi installation
+    cli_path = _antigravity_cli_path()
+    if cli_path is not None:
+        return {
+            "source": "local-antigravity",
+            "access_token": "local-session",
+            "cli_path": str(cli_path),
+        }
+    # 2. Check API key in environment
+    for key_var in ("ANTIGRAVITY_API_KEY", "GOOGLE_API_KEY", "GEMINI_API_KEY"):
+        val = (os.environ.get(key_var) or "").strip()
+        if val:
+            return {
+                "source": f"env:{key_var}",
+                "access_token": val,
+            }
+    # 3. Check auth store
+    auth_store = _read_auth_store()
+    antigravity_state = auth_store.get("antigravity", {})
+    if isinstance(antigravity_state, dict) and antigravity_state.get("access_token"):
+        return antigravity_state
+
+    raise AuthError(
+        "Google Antigravity credentials not found. Ensure Antigravity IDE is installed or run 'fool auth add antigravity'.",
+        provider="antigravity",
+        code="antigravity_auth_missing",
+    )
+
+
+def resolve_antigravity_runtime_credentials() -> Dict[str, Any]:
+    tokens = _read_antigravity_tokens()
+    access_token = str(tokens.get("access_token", "") or "").strip()
+    base_url = os.getenv("FOOL_ANTIGRAVITY_BASE_URL", "").strip().rstrip("/") or DEFAULT_ANTIGRAVITY_BASE_URL
+    return {
+        "provider": "antigravity",
+        "base_url": base_url,
+        "api_key": access_token,
+        "source": tokens.get("source", "antigravity"),
+        "cli_path": tokens.get("cli_path"),
+    }
+
+
+def get_antigravity_auth_status() -> Dict[str, Any]:
+    try:
+        creds = resolve_antigravity_runtime_credentials()
+        return {
+            "logged_in": True,
+            "source": creds.get("source"),
+            "api_key": creds.get("api_key"),
+            "cli_path": creds.get("cli_path"),
+        }
+    except AuthError as exc:
+        return {
+            "logged_in": False,
             "error": str(exc),
         }
 

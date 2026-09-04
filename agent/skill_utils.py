@@ -707,7 +707,7 @@ def extract_skill_conditions(frontmatter: Dict[str, Any]) -> Dict[str, List]:
     # Handle cases where metadata is not a dict (e.g., a string from malformed YAML)
     if not isinstance(metadata, dict):
         metadata = {}
-    hermes = metadata.get("fool") or {}
+    hermes = metadata.get("fool") or metadata.get("hermes") or {}
     if not isinstance(hermes, dict):
         hermes = {}
     return {

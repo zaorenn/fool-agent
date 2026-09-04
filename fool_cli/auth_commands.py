@@ -34,7 +34,7 @@ from fool_cli.secret_prompt import masked_secret_prompt
 
 
 # Providers that support OAuth login in addition to API keys.
-_OAUTH_CAPABLE_PROVIDERS = {"anthropic", "nous", "openai-codex", "xai-oauth", "qwen-oauth", "minimax-oauth"}
+_OAUTH_CAPABLE_PROVIDERS = {"anthropic", "nous", "openai-codex", "xai-oauth", "qwen-oauth", "minimax-oauth", "antigravity"}
 
 
 def _get_custom_provider_names() -> list:
@@ -429,6 +429,29 @@ def auth_add_command(args) -> None:
         )
         pool.add_entry(entry)
         print(f'Added {provider} OAuth credential #{len(pool.entries())}: "{entry.label}"')
+        return
+
+    if provider == "antigravity":
+        try:
+            creds = auth_mod.resolve_antigravity_runtime_credentials()
+        except auth_mod.AuthError as exc:
+            raise SystemExit(str(exc))
+        label = (getattr(args, "label", None) or "").strip() or _oauth_default_label(provider, len(pool.entries()) + 1)
+        entry = PooledCredential(
+            provider=provider,
+            id=uuid.uuid4().hex[:6],
+            label=label,
+            auth_type=AUTH_TYPE_OAUTH,
+            priority=0,
+            source=creds.get("source") or f"{SOURCE_MANUAL}:antigravity",
+            access_token=creds["api_key"],
+            base_url=creds.get("base_url"),
+        )
+        first_credential = not pool.entries()
+        pool.add_entry(entry)
+        if first_credential:
+            auth_mod.mark_provider_active_if_unset(provider)
+        print(f'Added {provider} credential #{len(pool.entries())}: "{entry.label}" (source: {entry.source})')
         return
 
     raise SystemExit(f"`fool auth add {provider}` is not implemented for auth type {requested_type} yet.")

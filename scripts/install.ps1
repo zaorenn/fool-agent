@@ -3148,6 +3148,12 @@ print(','.join(scripts))
         if (-not $webServerSyntaxOk) {
             throw "dashboard backend source failed syntax check: fool_cli/web_server.py"
         }
+
+        # Install ddgs for out-of-the-box free web search
+        try {
+            Write-Info "Ensuring ddgs is installed for zero-config web search..."
+            & $UvCmd pip install ddgs 2>&1 | Out-Null
+        } catch { }
     }
     
     Pop-Location

@@ -70,8 +70,8 @@ _HERMES_CORE_TOOLS = [
     "session_search",
     # Clarifying questions
     "clarify",
-    # Code execution + delegation
-    "execute_code", "delegate_task",
+    # Code execution + delegation + Antigravity
+    "execute_code", "delegate_task", "antigravity",
     # Cronjob management
     "cronjob",
     # Home Assistant smart home control (gated on HASS_TOKEN via check_fn)
@@ -217,6 +217,12 @@ TOOLSETS = {
     "cronjob": {
         "description": "Cronjob management tool - create, list, update, pause, resume, remove, and trigger scheduled tasks",
         "tools": ["cronjob"],
+        "includes": []
+    },
+
+    "antigravity": {
+        "description": "Google Antigravity autonomous agent integration - run prompts, delegate tasks, and chat with Antigravity models (flash_lite, flash, pro)",
+        "tools": ["antigravity"],
         "includes": []
     },
     

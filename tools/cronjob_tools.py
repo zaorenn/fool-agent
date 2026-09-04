@@ -1761,6 +1761,7 @@ def check_cronjob_requirements() -> bool:
         env_var_enabled("FOOL_INTERACTIVE")
         or env_var_enabled("FOOL_GATEWAY_SESSION")
         or env_var_enabled("FOOL_EXEC_ASK")
+        or env_var_enabled("FOOL_DESKTOP")
     )
 
 

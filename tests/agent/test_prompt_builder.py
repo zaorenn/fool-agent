@@ -442,7 +442,7 @@ class TestBuildContextFilesPrompt:
         with patch("pathlib.Path.home", return_value=fake_home):
             result = build_context_files_prompt(cwd=str(tmp_path))
         assert "Project Context" in result
-        assert "Hermes Agent" in result
+        assert "Fool Agent" in result or "Hermes Agent" in result
 
     def test_loads_agents_md(self, tmp_path):
         (tmp_path / "AGENTS.md").write_text("Use Ruff for linting.")
@@ -1011,5 +1011,21 @@ class TestParallelToolCallGuidance:
 # =========================================================================
 # Budget warning history stripping
 # =========================================================================
+
+
+class TestCompactSkillsPrompt:
+    def test_compact_wildcard_demotes_all_categories(self, monkeypatch, tmp_path):
+        from agent.prompt_builder import clear_skills_system_prompt_cache
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
+        skill_dir = tmp_path / "skills" / "cat1" / "skill1"
+        skill_dir.mkdir(parents=True)
+        (skill_dir / "SKILL.md").write_text(
+            "---\nname: skill1\ndescription: A very long and detailed description that takes up space\n---\nBody"
+        )
+        clear_skills_system_prompt_cache(clear_snapshot=True)
+        result = build_skills_system_prompt(compact_categories=frozenset({"*"}))
+        assert "cat1 [names only]: skill1" in result
+        assert "A very long and detailed description" not in result
+
 
 

@@ -622,6 +622,158 @@ def _ensure_web_plugins_loaded() -> None:
         logger.warning("Web plugin discovery failed (non-fatal): %s", exc)
 
 
+def _builtin_direct_search(query: str, limit: int = 5) -> dict:
+    """Native zero-config web search fallback using DuckDuckGo via ddgs or direct HTTP."""
+    limit = max(1, min(limit, 20))
+    # 1. Try ddgs package if installed
+    try:
+        from ddgs import DDGS
+
+        results = []
+        with DDGS(timeout=10) as client:
+            for i, hit in enumerate(client.text(query, max_results=limit)):
+                if i >= limit:
+                    break
+                url = str(hit.get("href") or hit.get("url") or "")
+                results.append(
+                    {
+                        "title": str(hit.get("title", "")),
+                        "url": url,
+                        "description": str(hit.get("body", "")),
+                        "position": i + 1,
+                    }
+                )
+        if results:
+            return {"success": True, "data": {"web": results}}
+    except Exception as exc:
+        logger.debug("ddgs search fallback failed: %s", exc)
+
+    # 2. Direct HTTP DuckDuckGo HTML fallback (zero external packages)
+    try:
+        import html as _html
+        import urllib.parse
+
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            )
+        }
+        with httpx.Client(timeout=12.0, follow_redirects=True) as client:
+            resp = client.post(
+                "https://html.duckduckgo.com/html/",
+                data={"q": query},
+                headers=headers,
+            )
+        if resp.status_code == 200:
+            blocks = re.split(r'<div class="result\s', resp.text)
+            results = []
+            for block in blocks[1:]:
+                if len(results) >= limit:
+                    break
+                url_match = re.search(r'class="result__url"[^>]*href="([^"]+)"', block) or re.search(r'class="result__snippet"[^>]*href="([^"]+)"', block)
+                if not url_match:
+                    continue
+                raw_url = url_match.group(1)
+                if "uddg=" in raw_url:
+                    raw_url = urllib.parse.unquote(raw_url.split("uddg=")[1].split("&")[0])
+
+                title_match = re.search(r'<h2 class="result__title">\s*<a[^>]*>(.*?)</a>', block, re.DOTALL)
+                title = ""
+                if title_match:
+                    title = re.sub(r'<[^>]+>', '', title_match.group(1)).strip()
+                    title = _html.unescape(title)
+
+                snippet_match = re.search(r'<a class="result__snippet"[^>]*>(.*?)</a>', block, re.DOTALL)
+                snippet = ""
+                if snippet_match:
+                    snippet = re.sub(r'<[^>]+>', '', snippet_match.group(1)).strip()
+                    snippet = _html.unescape(snippet)
+
+                if raw_url and (title or snippet):
+                    results.append(
+                        {
+                            "title": title or raw_url,
+                            "url": raw_url,
+                            "description": snippet,
+                            "position": len(results) + 1,
+                        }
+                    )
+            if results:
+                return {"success": True, "data": {"web": results}}
+    except Exception as exc:
+        logger.debug("Direct HTTP search fallback failed: %s", exc)
+
+    return {
+        "success": False,
+        "error": "No web search results found. Please check internet connection.",
+    }
+
+
+async def _builtin_direct_extract(urls: List[str]) -> List[dict]:
+    """Native HTTP content extractor for URLs without external API dependencies."""
+    import html as _html
+
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        ),
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    }
+    results = []
+    async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
+        for url in urls:
+            try:
+                resp = await client.get(url, headers=headers)
+                if resp.status_code >= 400:
+                    results.append(
+                        {
+                            "url": url,
+                            "title": "",
+                            "content": "",
+                            "error": f"HTTP {resp.status_code}: {resp.reason_phrase}",
+                        }
+                    )
+                    continue
+
+                text = resp.text
+                title_m = re.search(r'<title[^>]*>(.*?)</title>', text, re.DOTALL | re.IGNORECASE)
+                title = _html.unescape(title_m.group(1).strip()) if title_m else ""
+
+                # Strip script, style, nav, and other boilerplate elements
+                text = re.sub(r'<(script|style|nav|header|footer|svg|noscript|form|iframe)[^>]*>.*?</\1>', '', text, flags=re.DOTALL | re.IGNORECASE)
+                text = re.sub(r'<h[1-6][^>]*>(.*?)</h[1-6]>', r'\n\n# \1\n\n', text, flags=re.DOTALL | re.IGNORECASE)
+                text = re.sub(r'<p[^>]*>(.*?)</p>', r'\n\n\1\n\n', text, flags=re.DOTALL | re.IGNORECASE)
+                text = re.sub(r'<li[^>]*>(.*?)</li>', r'\n- \1', text, flags=re.DOTALL | re.IGNORECASE)
+                text = re.sub(r'<br\s*/?>', '\n', text, flags=re.IGNORECASE)
+                text = re.sub(r'<[^>]+>', ' ', text)
+                text = _html.unescape(text)
+
+                lines = [line.strip() for line in text.split('\n')]
+                clean_text = '\n'.join(line for line in lines if line)
+                clean_text = re.sub(r'\n{3,}', '\n\n', clean_text).strip()
+
+                results.append(
+                    {
+                        "url": url,
+                        "title": title or url,
+                        "content": clean_text,
+                        "error": None,
+                    }
+                )
+            except Exception as exc:
+                results.append(
+                    {
+                        "url": url,
+                        "title": "",
+                        "content": "",
+                        "error": f"Failed to fetch {url}: {exc}",
+                    }
+                )
+    return results
+
+
 def web_search_tool(query: str, limit: int = 5) -> str:
     """
     Search the web for information using available search API backend.
@@ -714,13 +866,8 @@ def web_search_tool(query: str, limit: int = 5) -> str:
                     ),
                 }
             else:
-                response_data = {
-                    "success": False,
-                    "error": (
-                        "No web search provider configured. "
-                        "Run `fool tools` to set one up."
-                    ),
-                }
+                logger.info("Web search via built-in fallback: '%s' (limit: %d)", query, limit)
+                response_data = _builtin_direct_search(query, limit)
         else:
             logger.info(
                 "Web search via %s: '%s' (limit: %d)",
@@ -878,76 +1025,57 @@ async def web_extract_tool(
             )
 
             provider = _wsp_get_provider(backend) if backend else None
-            if provider is None or not provider.supports_extract():
-                # When the configured name IS registered but doesn't support
-                # extract (search-only providers like brave-free / ddgs /
-                # searxng), surface that as a typed "search-only" error
-                # rather than silently switching backends. When the name
-                # isn't registered at all (typo / uninstalled plugin), fall
-                # through to the active-provider walk.
-                if provider is not None and not provider.supports_extract():
-                    return json.dumps(
-                        {
-                            "success": False,
-                            "error": (
-                                f"{provider.display_name} is a search-only "
-                                "backend and cannot extract URL content. "
-                                "Set web.extract_backend to firecrawl, "
-                                "tavily, exa, or parallel."
-                            ),
-                        },
-                        ensure_ascii=False,
-                    )
-                provider = get_active_extract_provider()
-                if provider is None:
-                    # If the configured backend is a bundled web plugin the
-                    # user explicitly disabled, the backend is set correctly
-                    # and the real fix is to re-enable the plugin — say so
-                    # instead of telling them to set web.extract_backend
-                    # (which they already did). #40190 follow-up.
-                    disabled_key = _disabled_web_plugin_for(capability="extract")
-                    if disabled_key:
-                        _vendor = disabled_key.split("/", 1)[-1]
-                        return json.dumps(
-                            {
-                                "success": False,
-                                "error": (
-                                    f"web.extract_backend is set to '{_vendor}', "
-                                    f"but its plugin ('{disabled_key}') is disabled "
-                                    "in config. Re-enable it with "
-                                    f"`fool plugins enable {disabled_key}` "
-                                    "(or remove it from plugins.disabled)."
-                                ),
-                            },
-                            ensure_ascii=False,
-                        )
-                    return json.dumps(
-                        {
-                            "success": False,
-                            "error": (
-                                "No web extract provider configured. "
-                                "Set web.extract_backend to firecrawl, "
-                                "tavily, exa, or parallel."
-                            ),
-                        },
-                        ensure_ascii=False,
-                    )
-
-            logger.info(
-                "Web extract via %s: %d URL(s)", provider.name, len(safe_urls)
-            )
-
-            # Async-or-sync dispatch: parallel + firecrawl have async
-            # extract(); exa + tavily are sync.
-            import inspect
-            if inspect.iscoroutinefunction(provider.extract):
-                results = await provider.extract(safe_urls, format=format)
-            else:
-                # Run sync extract() in a thread so we don't block the
-                # event loop on network I/O.
-                results = await asyncio.to_thread(
-                    provider.extract, safe_urls, format=format
+            if provider is not None and not provider.supports_extract():
+                return json.dumps(
+                    {
+                        "success": False,
+                        "error": (
+                            f"{provider.display_name} is a search-only "
+                            "backend and cannot extract URL content. "
+                            "Set web.extract_backend to firecrawl, "
+                            "tavily, exa, or parallel."
+                        ),
+                    },
+                    ensure_ascii=False,
                 )
+            if provider is None:
+                provider = get_active_extract_provider()
+
+            if provider is None or not provider.supports_extract():
+                disabled_key = _disabled_web_plugin_for(capability="extract")
+                if disabled_key:
+                    _vendor = disabled_key.split("/", 1)[-1]
+                    return json.dumps(
+                        {
+                            "success": False,
+                            "error": (
+                                f"web.extract_backend is set to '{_vendor}', "
+                                f"but its plugin ('{disabled_key}') is disabled "
+                                "in config. Re-enable it with "
+                                f"`fool plugins enable {disabled_key}` "
+                                "(or remove it from plugins.disabled)."
+                            ),
+                        },
+                        ensure_ascii=False,
+                    )
+                logger.info("Web extract via built-in HTTP fallback: %d URL(s)", len(safe_urls))
+                results = await _builtin_direct_extract(safe_urls)
+            else:
+                logger.info(
+                    "Web extract via %s: %d URL(s)", provider.name, len(safe_urls)
+                )
+
+                # Async-or-sync dispatch: parallel + firecrawl have async
+                # extract(); exa + tavily are sync.
+                import inspect
+                if inspect.iscoroutinefunction(provider.extract):
+                    results = await provider.extract(safe_urls, format=format)
+                else:
+                    # Run sync extract() in a thread so we don't block the
+                    # event loop on network I/O.
+                    results = await asyncio.to_thread(
+                        provider.extract, safe_urls, format=format
+                    )
 
         # Reconstruct the original input order across invalid, blocked, and
         # provider-processed entries. Providers are expected to preserve the

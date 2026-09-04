@@ -459,6 +459,33 @@ RAPOR_PDF_SCHEMA = {
     },
 }
 
+def check_rapor_requirements() -> bool:
+    """Check if official report generation tools should be exposed.
+
+    Gated so 14+ specialized report tools (~3000 tokens) do not bloat normal
+    conversations unless FOOL_RAPOR_ENABLED=1 is set or explicitly in toolsets.
+    """
+    import os
+    from utils import env_var_enabled
+    if env_var_enabled("FOOL_RAPOR_ENABLED"):
+        return True
+    try:
+        from fool_cli.config import load_config
+        cfg = load_config()
+        if cfg.get("rapor", {}).get("enabled", False):
+            return True
+        toolsets = cfg.get("toolsets", [])
+        if isinstance(toolsets, list) and "rapor" in toolsets:
+            return True
+        platform = os.environ.get("FOOL_PLATFORM") or "cli"
+        plat_ts = (cfg.get("platform_toolsets") or {}).get(platform, [])
+        if isinstance(plat_ts, list) and "rapor" in plat_ts:
+            return True
+    except Exception:
+        pass
+    return False
+
+
 # Kayitlar EN UST SEVIYEDE, ``try`` icinde DEGIL.
 #
 # ``tools/registry.py::_module_registers_tools`` yalnizca modul govdesindeki
@@ -475,6 +502,7 @@ registry.register(
         sorgu=args.get("sorgu"),
         token_butcesi=int(args.get("token_butcesi", 8000)),
     ),
+    check_fn=check_rapor_requirements,
     emoji="📑",
 )
 
@@ -489,6 +517,7 @@ registry.register(
         sayfa_en_az=int(args.get("sayfa_en_az", 0) or 0),
         sayfa_en_cok=int(args.get("sayfa_en_cok", 0) or 0),
     ),
+    check_fn=check_rapor_requirements,
     emoji="📜",
 )
 
@@ -497,6 +526,7 @@ registry.register(
     toolset="rapor",
     schema=SARTNAME_GOSTER_SCHEMA,
     handler=lambda args, **kw: arac.sartname_goster(kimlik=args.get("kimlik", "")),
+    check_fn=check_rapor_requirements,
     emoji="📐",
 )
 
@@ -508,6 +538,7 @@ registry.register(
         kimlik=args.get("kimlik", ""),
         sartname_kimligi=args.get("sartname_kimligi", ""),
     ),
+    check_fn=check_rapor_requirements,
     emoji="🔎",
 )
 
@@ -521,6 +552,7 @@ registry.register(
         en_az=int(args.get("en_az", 0) or 0),
         en_cok=int(args.get("en_cok", 0) or 0),
     ),
+    check_fn=check_rapor_requirements,
     emoji="📏",
 )
 
@@ -529,6 +561,7 @@ registry.register(
     toolset="rapor",
     schema=ORNEK_OGREN_SCHEMA,
     handler=lambda args, **kw: arac.ornek_ogren(yol=args.get("yol", "")),
+    check_fn=check_rapor_requirements,
     emoji="🧭",
 )
 
@@ -537,6 +570,7 @@ registry.register(
     toolset="rapor",
     schema=YARIM_COZUMLE_SCHEMA,
     handler=lambda args, **kw: arac.yarim_cozumle(yol=args.get("yol", "")),
+    check_fn=check_rapor_requirements,
     emoji="🧩",
 )
 
@@ -549,6 +583,7 @@ registry.register(
         hedef=args.get("hedef", ""),
         bicim_kaynagi=args.get("bicim_kaynagi"),
     ),
+    check_fn=check_rapor_requirements,
     emoji="📄",
 )
 
@@ -567,6 +602,7 @@ registry.register(
         ornek_rapor=args.get("ornek_rapor"),
         sartname_kimligi=args.get("sartname_kimligi", ""),
     ),
+    check_fn=check_rapor_requirements,
     emoji="🗂️",
 )
 
@@ -579,6 +615,7 @@ registry.register(
         baslik=args.get("baslik", ""),
         ogeler=args.get("ogeler"),
     ),
+    check_fn=check_rapor_requirements,
     emoji="✍️",
 )
 
@@ -591,6 +628,7 @@ registry.register(
         icerik=args.get("icerik", ""),
         sayfa_sayisi=int(args.get("sayfa_sayisi", 1)),
     ),
+    check_fn=check_rapor_requirements,
     emoji="📎",
 )
 
@@ -602,6 +640,7 @@ registry.register(
         kimlik=args.get("kimlik", ""),
         alanlar=args.get("alanlar"),
     ),
+    check_fn=check_rapor_requirements,
     emoji="🏷️",
 )
 
@@ -610,6 +649,7 @@ registry.register(
     toolset="rapor",
     schema=TASLAK_DURUM_SCHEMA,
     handler=lambda args, **kw: arac.taslak_durum(kimlik=args.get("kimlik", "")),
+    check_fn=check_rapor_requirements,
     emoji="📋",
 )
 
@@ -622,6 +662,7 @@ registry.register(
         hedef=args.get("hedef", ""),
         bicim_kaynagi=args.get("bicim_kaynagi"),
     ),
+    check_fn=check_rapor_requirements,
     emoji="📘",
 )
 
@@ -633,6 +674,7 @@ registry.register(
         docx=args.get("docx", ""),
         hedef_klasor=args.get("hedef_klasor"),
     ),
+    check_fn=check_rapor_requirements,
     emoji="🖨️",
 )
 
@@ -644,5 +686,6 @@ registry.register(
         kimlik=args.get("kimlik", ""),
         satirlar=args.get("satirlar"),
     ),
+    check_fn=check_rapor_requirements,
     emoji="📝",
 )

@@ -532,16 +532,32 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
         # Focus mode (opt-in) demotes non-coding skill categories to
         # names-only in the index (never hidden — skill_view/skills_list
         # reach everything, and every name stays visible for recall). The
-        # default coding posture leaves the index untouched.
+        # Check if compact skill index mode is requested via config, env, or local provider
         _compact_cats = frozenset()
         try:
-            from agent.coding_context import coding_compact_skill_categories
-
-            _compact_cats = coding_compact_skill_categories(
-                platform=agent.platform, cwd=resolve_context_cwd()
-            )
+            from fool_cli.config import load_config
+            _cfg = load_config()
+            _skills_cfg = _cfg.get("skills", {}) if isinstance(_cfg.get("skills"), dict) else {}
+            _index_mode = str(_skills_cfg.get("index_mode", "")).strip().lower()
+            _compact_flag = _skills_cfg.get("compact", False)
+            if _index_mode == "compact" or _compact_flag or os.environ.get("FOOL_COMPACT_SKILLS") in ("1", "true", "yes"):
+                _compact_cats = frozenset({"*"})
+            elif _index_mode != "full":
+                _is_local = getattr(agent, "provider", "") in ("lmstudio", "ollama", "local", "vllm")
+                if _is_local:
+                    _compact_cats = frozenset({"*"})
         except Exception:
-            _compact_cats = frozenset()
+            pass
+
+        if not _compact_cats:
+            try:
+                from agent.coding_context import coding_compact_skill_categories
+
+                _compact_cats = coding_compact_skill_categories(
+                    platform=agent.platform, cwd=resolve_context_cwd()
+                )
+            except Exception:
+                _compact_cats = frozenset()
         skills_prompt = _r.build_skills_system_prompt(
             available_tools=agent.valid_tool_names,
             available_toolsets=avail_toolsets,

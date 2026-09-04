@@ -1809,17 +1809,24 @@ def _element_to_dict(e: UIElement) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 def check_computer_use_requirements() -> bool:
-    """Return True iff computer_use can run on this host.
+    """Return True iff computer_use can run on this host and is enabled.
 
-    Conditions: macOS, Windows, or Linux + cua-driver binary installed (or
-    override via env). cua-driver runs on all three; the Linux path is
-    headed/X11 today (Wayland via XWayland), pure-Wayland progress tracked
-    upstream. Linux users see specific blocked checks via
-    `fool computer-use doctor` if their session is incomplete (e.g. no
-    DISPLAY set).
+    Conditions: macOS, Windows, or Linux + cua-driver binary installed +
+    explicit opt-in via FOOL_COMPUTER_USE_ENABLED=1 or config.yaml.
     """
     if sys.platform not in ("darwin", "win32", "linux"):
         return False
+    from utils import env_var_enabled
+    if not env_var_enabled("FOOL_COMPUTER_USE_ENABLED"):
+        try:
+            from fool_cli.config import load_config
+            cfg = load_config()
+            if not cfg.get("computer_use", {}).get("enabled", False):
+                toolsets = cfg.get("toolsets", [])
+                if not (isinstance(toolsets, list) and "computer_use" in toolsets):
+                    return False
+        except Exception:
+            return False
     from tools.computer_use.cua_backend import cua_driver_binary_available
     return cua_driver_binary_available()
 
