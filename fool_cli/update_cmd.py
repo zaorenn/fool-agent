@@ -2594,25 +2594,47 @@ def _log_only_write(text: str) -> None:
     except Exception:
         pass
 
-def _run_logged_subprocess(cmd, *, cwd=None, env=None):
+def _run_logged_subprocess(cmd, *, cwd=None, env=None, stream_progress: bool = True):
     """Run ``cmd`` capturing combined output into update.log (not the terminal).
 
     Returns the ``CompletedProcess`` (with ``stdout`` populated) so the caller
     can decide whether to surface the captured output on failure.
     """
-    result = subprocess.run(
-        cmd,
-        cwd=cwd,
-        env=env,
-        check=False,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-    )
-    _log_only_write(result.stdout or "")
-    return result
+    try:
+        proc = subprocess.Popen(
+            cmd,
+            cwd=cwd,
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            bufsize=1,
+        )
+    except Exception as exc:
+        logger.warning("Failed to spawn subprocess %s: %s", cmd, exc)
+        return subprocess.CompletedProcess(cmd, 1, stdout=str(exc))
+
+    lines = []
+    import time
+
+    start_time = time.time()
+    last_heartbeat = start_time
+
+    if proc.stdout:
+        for line in iter(proc.stdout.readline, ""):
+            lines.append(line)
+            _log_only_write(line)
+            now = time.time()
+            if stream_progress and (now - last_heartbeat >= 15.0):
+                elapsed = int(now - start_time)
+                print(f"  → Building desktop app ({elapsed}s elapsed)...", flush=True)
+                last_heartbeat = now
+
+    proc.wait()
+    all_output = "".join(lines)
+    return subprocess.CompletedProcess(cmd, proc.returncode, stdout=all_output)
 
 def _cmd_update_check(branch: str = "main", *, branch_explicit: bool = False):
     """Implement ``fool update --check``: fetch and report without installing.
@@ -4564,18 +4586,13 @@ def _rebuild_desktop_after_update(
 
     build_env = with_hermes_node_path()
 
-    # Cikti YAKALANIYOR (gunluge gidiyor), yani bu adim boyunca ekranda
-    # hicbir sey gorunmuyor. Electron paketleme 5-10 dakika suruyor ve
-    # kullanici icin bunun "donmus"tan farki yok -- gercekten oyle
-    # bildirildi. En azindan ne oldugunu ve ne kadar surecegini soyle.
-    print("  → Building the desktop app. This takes several minutes and prints")
-    print("    nothing while it runs (output goes to the update log).")
+    print("  → Building the desktop app (packaging Electron)...")
 
     build_result = _m()._run_logged_subprocess(
         desktop_build_cmd, cwd=_m().PROJECT_ROOT, env=build_env
     )
     if build_result.returncode != 0:
-        print("  ⚠ First build attempt failed; retrying once (same duration).")
+        print("  ⚠ First build attempt failed; retrying once...")
         build_result = _m()._run_logged_subprocess(
             desktop_build_cmd, cwd=_m().PROJECT_ROOT, env=build_env
         )

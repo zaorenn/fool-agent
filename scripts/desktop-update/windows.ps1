@@ -562,24 +562,49 @@ function Invoke-FoolStep([string]$Exe, [string[]]$FoolArgs, [string]$Tag) {
     $psi.EnvironmentVariables["PYTHONUTF8"] = "1"
     $psi.CreateNoWindow = $true
     $proc = [System.Diagnostics.Process]::Start($psi)
-    $outTask = $proc.StandardOutput.ReadToEndAsync()
-    $errTask = $proc.StandardError.ReadToEndAsync()
-    while (-not $proc.HasExited) {
-        Start-Sleep -Milliseconds 150
+    $outTask = $proc.StandardOutput.ReadLineAsync()
+    $errTask = $proc.StandardError.ReadLineAsync()
+    $allOutput = [System.Text.StringBuilder]::new()
+
+    while ($outTask -ne $null -or $errTask -ne $null) {
+        $acted = $false
+        if ($outTask -ne $null -and $outTask.IsCompleted) {
+            $ln = $outTask.Result
+            if ($null -ne $ln) {
+                $acted = $true
+                [void]$allOutput.AppendLine($ln)
+                if ($ln.Trim()) {
+                    Write-HandoffLog ("{0}| {1}" -f $Tag, $ln)
+                    $clean = $ln.Trim() -replace "^[→⚕◆✓!~✗\s]+", ""
+                    if ($clean -and -not ($clean -match "^[0-9/:]") -and $clean.Length -lt 90) {
+                        $script:UiState.message = $clean
+                    }
+                }
+                $outTask = $proc.StandardOutput.ReadLineAsync()
+            } else {
+                $outTask = $null
+            }
+        }
+        if ($errTask -ne $null -and $errTask.IsCompleted) {
+            $ln = $errTask.Result
+            if ($null -ne $ln) {
+                $acted = $true
+                [void]$allOutput.AppendLine($ln)
+                if ($ln.Trim()) {
+                    Write-HandoffLog ("{0}!| {1}" -f $Tag, $ln)
+                }
+                $errTask = $proc.StandardError.ReadLineAsync()
+            } else {
+                $errTask = $null
+            }
+        }
+        if (-not $acted) {
+            Start-Sleep -Milliseconds 80
+        }
         if ($script:Ui) { [System.Windows.Forms.Application]::DoEvents() }
     }
     $proc.WaitForExit()
-    $outText = $outTask.Result
-    $errText = $errTask.Result
-    foreach ($ln in ($outText -split "`r?`n")) {
-        if ($ln.Trim()) { Write-HandoffLog ("{0}| {1}" -f $Tag, $ln) }
-    }
-    foreach ($ln in ($errText -split "`r?`n")) {
-        if ($ln.Trim()) { Write-HandoffLog ("{0}!| {1}" -f $Tag, $ln) }
-    }
-    $all = $outText
-    if ($errText) { $all += "`n" + $errText }
-    return @{ Code = $proc.ExitCode; Output = $all }
+    return @{ Code = $proc.ExitCode; Output = $allOutput.ToString() }
 }
 
 $finalCode = 1

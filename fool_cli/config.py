@@ -937,7 +937,13 @@ def _fool_seed_local_model(home: Path) -> None:
     Dolu bir ``model.provider`` ASLA ezilmez.
     """
     if "pytest" in sys.modules or os.environ.get("PYTEST_CURRENT_TEST"):
-        return
+        try:
+            from fool_constants import get_hermes_home
+
+            if home.resolve() == Path(get_hermes_home()).resolve():
+                return
+        except Exception:
+            return
 
     config_path = home / "config.yaml"
 

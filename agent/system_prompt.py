@@ -425,15 +425,17 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
     # icin kullanici onu kapatamadi bile.
     from fool.guidance import blocks as _fool_guidance_blocks
 
-    stable_parts.extend(_fool_guidance_blocks())
+    _platform = getattr(agent, "platform", None)
+    _is_voice = getattr(agent, "is_voice", False)
+    stable_parts.extend(_fool_guidance_blocks(platform=_platform, is_voice=_is_voice))
 
     # Universal task-completion / no-fabrication guidance.  Applied to ALL
     # models regardless of tool_use_enforcement gating — the failure modes
     # this targets (stopping after a stub; fabricating output when a real
     # path is blocked) are not model-family specific.  Gated only by
     # config.yaml ``agent.task_completion_guidance`` (default True) so
-    # users who want a leaner prompt can turn it off.
-    if getattr(agent, "_task_completion_guidance", True) and agent.valid_tool_names:
+    # users who want a leaner prompt can turn it off. Chat mode omits this.
+    if _platform != "chat" and getattr(agent, "_task_completion_guidance", True) and agent.valid_tool_names:
         stable_parts.append(TASK_COMPLETION_GUIDANCE)
 
     # Universal parallel-tool-call guidance.  Tells the model to batch
@@ -444,7 +446,7 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
     # round-trips and the resent-context cost that compounds over a long
     # conversation.  Gated by config.yaml ``agent.parallel_tool_call_guidance``
     # (default True) and only injected when tools are actually loaded.
-    if getattr(agent, "_parallel_tool_call_guidance", True) and agent.valid_tool_names:
+    if _platform != "chat" and getattr(agent, "_parallel_tool_call_guidance", True) and agent.valid_tool_names:
         stable_parts.append(PARALLEL_TOOL_CALL_GUIDANCE)
 
     # Tool-aware behavioral guidance: only inject when the tools are loaded
@@ -470,7 +472,7 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
 
     # Steering only lands inside tool results, so it's only reachable when the
     # agent has tools. Static text → byte-stable prompt (no cache hit).
-    if agent.valid_tool_names:
+    if _platform != "chat" and agent.valid_tool_names:
         stable_parts.append(STEER_CHANNEL_NOTE)
 
     # Computer-use — goes in as its own block rather than being merged into
@@ -491,7 +493,7 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
     #   true  — always inject (all models)
     #   false — never inject
     #   list  — custom model-name substrings to match
-    if agent.valid_tool_names:
+    if _platform != "chat" and agent.valid_tool_names:
         _enforce = agent._tool_use_enforcement
         _inject = False
         if _enforce is True or (isinstance(_enforce, str) and _enforce.lower() in {"true", "always", "yes", "on"}):

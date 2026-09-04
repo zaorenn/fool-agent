@@ -209,6 +209,10 @@
 
   function apply(state) {
     if (settled) return
+    if (state.status === 'running') {
+      if (state.message) lineEl.textContent = state.message
+      return
+    }
     if (state.status === 'done') {
       settle('done')
       glyphEl.textContent = '\u2713'

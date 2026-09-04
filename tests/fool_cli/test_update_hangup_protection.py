@@ -31,7 +31,7 @@ def test_update_completion_includes_bounded_action_identity(monkeypatch, capsys)
 
     assert capsys.readouterr().out.splitlines() == [
         "✓ Update complete!",
-        f"=== hermes-update completed {'a' * 32} ===",
+        f"=== fool-update completed {'a' * 32} ===",
     ]
 
 

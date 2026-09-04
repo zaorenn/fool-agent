@@ -4474,6 +4474,7 @@ def _gui_surface_toolsets(platform: str) -> set[str]:
     surfaces = {"project"}
     if platform == "desktop":
         surfaces.add("desktop_ui")
+        surfaces.add("computer_use")
     return surfaces
 
 
@@ -4659,8 +4660,23 @@ def _resolve_enabled_toolsets(platform: str | None = None) -> list[str] | None:
         # recovery above — which keys off hermes-cli's tool universe — can't
         # surface them. This resolver runs ONLY in the desktop/TUI gateway, so
         # folding them in here is the gate that exposes them on exactly the
-        # surface that can answer them.
-        return sorted(enabled | _gui_surface_toolsets(session_platform))
+        gui_tools = _gui_surface_toolsets(session_platform)
+        try:
+            from fool.agent_authority import enforcement_enabled, granted_toolsets
+
+            if enforcement_enabled(cfg):
+                from fool.model_readiness import has_passed
+
+                _model_cfg = (cfg or {}).get("model") or {}
+                _model = str(
+                    (_model_cfg.get("default") or _model_cfg.get("model") or "")
+                    if isinstance(_model_cfg, dict)
+                    else ""
+                ).strip()
+                gui_tools = granted_toolsets(gui_tools, passed=has_passed(_model))
+        except Exception:
+            pass
+        return sorted(enabled | gui_tools)
     except Exception:
         if fallback_notice is not None:
             print(

@@ -281,18 +281,16 @@ class DDGSWebSearchProvider(WebSearchProvider):
         return "DuckDuckGo (ddgs)"
 
     def is_available(self) -> bool:
-        """Return True when the ``ddgs`` package is importable.
-
-        Probes the import once; cheap because Python caches the import. Must
-        NOT perform network I/O — runs at tool-registration time and on every
-        ``fool tools`` paint.
-        """
+        """Return True when the ``ddgs`` package is importable."""
         try:
             import ddgs  # noqa: F401
-
             return True
         except ImportError:
-            return False
+            try:
+                from tools.lazy_deps import is_available
+                return is_available("search.ddgs")
+            except Exception:
+                return False
 
     def supports_search(self) -> bool:
         return True
@@ -310,10 +308,15 @@ class DDGSWebSearchProvider(WebSearchProvider):
         try:
             import ddgs  # type: ignore  # noqa: F401 — availability probe
         except ImportError:
-            return {
-                "success": False,
-                "error": "ddgs package is not installed — run `pip install ddgs`",
-            }
+            try:
+                from tools.lazy_deps import ensure
+                ensure("search.ddgs")
+                import ddgs  # type: ignore  # noqa: F401
+            except Exception:
+                return {
+                    "success": False,
+                    "error": "ddgs package is not installed — run `pip install ddgs`",
+                }
 
         # DDGS().text yields at most `max_results` items; we cap defensively
         # in case the package ignores the hint.

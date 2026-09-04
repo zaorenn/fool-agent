@@ -184,6 +184,16 @@ Being useful and being pleasant are the same thing here. Neither one is
 achieved by being longer."""
 
 
+CHAT_MODE_GUIDANCE: Final[str] = """CONVERSATIONAL CHAT MODE
+You are The Fool in conversational Chat mode.
+- Communicate naturally, thoughtfully, and helpfully with clear formatting (markdown, code blocks, lists where appropriate).
+- Match the user's language and tone.
+- Start directly with the substance of your response. Avoid repetitive canned openers like "Great question!", "Certainly!", "Sure thing!".
+- Be completely honest when you do not know something; do not hallucinate facts.
+- Use `web_search` and `web_extract` whenever real-time data, facts, or recent events are required.
+- You are in Chat mode without terminal execution or desktop control tools. If the user asks for shell execution, repository workspace edits, or computer automation, inform them that Cowork mode is designed for full workspace interaction."""
+
+
 def _active_voice_persona() -> str:
     """Yapılandırmada seçili sesli kipin personası.
 
@@ -208,36 +218,46 @@ def _profile_memory_guidance() -> str:
     return PROFILE_MEMORY_GUIDANCE
 
 
-def blocks() -> tuple[str, ...]:
-    """Sistem promptuna eklenecek The Fool rehber blokları."""
-    return (
+def blocks(
+    platform: str | None = None,
+    is_voice: bool | None = None,
+) -> tuple[str, ...]:
+    """Sistem promptuna eklenecek The Fool rehber blokları.
+
+    - platform == "chat": salt metin sohbet modu (kısa ve yalın prompt; kabuk/otomasyon
+      ve ses personası eklenmez).
+    - is_voice == False: metin oturumlarında "YOU ARE BEING HEARD, NOT READ"
+      ses kısıtlaması (kod bloğu yasağı vb.) kaldırılır.
+    - platform=None, is_voice=None: geriye dönük uyumluluk için varsayılan tam liste.
+    """
+    if platform == "chat":
+        return (
+            CHAT_MODE_GUIDANCE,
+            WEB_SEARCH_AND_NEWS_GUIDANCE,
+            _profile_memory_guidance(),
+        )
+
+    parts: list[str] = [
         OPEN_IN_DEFAULT_BROWSER_GUIDANCE,
         ACCENT_COLOR_GUIDANCE,
-        # Kullanici konusurken "erkek sesine gec" diyor ve ajanin elinde
-        # yalnizca ham ``fool config set`` vardi -- motor adini, ayar
-        # anahtarini ve ses kimligini birlikte dogru bilmesi gerekiyordu.
-        # Uydurmaya calisiyor ve tur bosa gidiyordu.
         VOICE_CONTROL_GUIDANCE,
-        # Ajan olmayan komutlari uyduruyordu (olculdu: ``fool telegram``,
-        # ``fool gateway logs``, ``fool voice`` -- ucu de yok). Kullanici
-        # "telegram'i kur" diyor, kabuk hata veriyor, ajan baska bir varyant
-        # deniyor; tur bosa gidiyor ve kullanici ajani beceriksiz saniyor.
         CLI_COMMAND_GUIDANCE,
         SPOTIFY_GUIDANCE,
         WEB_SEARCH_AND_NEWS_GUIDANCE,
         YOUTUBE_MEDIA_GUIDANCE,
-        # AKTIF sesli kipin personasi. Iki kip var ve gereksinimleri
-        # celisiyor: arkadas kipinde cogu tur bir gorev degil (kisa, sicak),
-        # Jarvis kipinde gercekten is yapiliyor (kisa, kesin, yikici islemden
-        # once onay). Tek personada birlestirmek ikisini de bozuyordu.
-        _active_voice_persona(),
-        # Profil hafizasi sormadan ve iz birakmadan buyuyordu. Rizanin kendisi
-        # bir YARGI ve yargiyi kod veremez; mekanizma ve izlenebilirlik
-        # ``fool/profile_memory.py`` icinde, kural burada.
-        _profile_memory_guidance(),
-    )
+    ]
+
+    if is_voice is not False:
+        parts.append(_active_voice_persona())
+
+    parts.append(_profile_memory_guidance())
+    return tuple(parts)
 
 
-def all_guidance() -> tuple[str, ...]:
+def all_guidance(
+    platform: str | None = None,
+    is_voice: bool | None = None,
+) -> tuple[str, ...]:
     """``blocks()`` icin okunur takma ad -- testler ve cagiranlar icin."""
-    return blocks()
+    return blocks(platform=platform, is_voice=is_voice)
+
