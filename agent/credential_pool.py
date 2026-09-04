@@ -2799,6 +2799,30 @@ def _seed_from_singletons(provider: str, entries: List[PooledCredential]) -> Tup
         except Exception as exc:
             logger.debug("MiniMax OAuth token seed failed: %s", exc)
 
+    elif provider == "antigravity":
+        try:
+            from fool_cli.auth import resolve_antigravity_runtime_credentials
+            creds = resolve_antigravity_runtime_credentials()
+            token = creds.get("api_key", "")
+            if token:
+                source_name = creds.get("source", "local-antigravity")
+                if not _is_suppressed(provider, source_name):
+                    active_sources.add(source_name)
+                    changed |= _upsert_entry(
+                        entries,
+                        provider,
+                        source_name,
+                        {
+                            "source": source_name,
+                            "auth_type": AUTH_TYPE_OAUTH,
+                            "access_token": token,
+                            "base_url": creds.get("base_url", ""),
+                            "label": "Google Antigravity",
+                        },
+                    )
+        except Exception as exc:
+            logger.debug("Antigravity credential seed failed: %s", exc)
+
     elif provider == "openai-codex":
         # Respect user suppression — `fool auth remove openai-codex` marks
         # the device_code source as suppressed so it won't be re-seeded from

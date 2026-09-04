@@ -443,7 +443,7 @@ def auth_add_command(args) -> None:
             label=label,
             auth_type=AUTH_TYPE_OAUTH,
             priority=0,
-            source=creds.get("source") or f"{SOURCE_MANUAL}:antigravity",
+            source=f"{SOURCE_MANUAL}:antigravity",
             access_token=creds["api_key"],
             base_url=creds.get("base_url"),
         )
