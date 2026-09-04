@@ -100,10 +100,7 @@ export function PersonaSettings() {
   return (
     <SettingsContent>
       <SettingsSection icon={Volume2} title="Persona">
-        <ListRow
-          description="One choice sets both the voice and the app's accent colour."
-          title="Who is speaking"
-        />
+        <ListRow description="One choice sets both the voice and the app's accent colour." title="Who is speaking" />
 
         <div className="flex flex-wrap gap-2 px-1 pt-1 pb-2">
           {PERSONAS.map(entry => (
@@ -124,12 +121,7 @@ export function PersonaSettings() {
           ))}
         </div>
 
-        {engine && (
-          <ListRow
-            description={speakingSummary(engine)}
-            title="Speaking now"
-          />
-        )}
+        {engine && <ListRow description={speakingSummary(engine)} title="Speaking now" />}
 
         {stranded && (
           <ListRow

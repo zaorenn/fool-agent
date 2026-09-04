@@ -214,8 +214,7 @@ export const voiceApi = {
   catalog: () => call<VoiceCatalog>('/api/fool/voice/catalog'),
   /** Konusma dili uyarisini KALICI olarak kapat. Oturum icinde tutmak, panel
    *  her acildiginda uyariyi geri getirir ve dugmeyi anlamsiz kilardi. */
-  dismissSpeechLanguageHint: () =>
-    call<{ ok: boolean }>('/api/fool/voice/speech-language-hint/dismiss', {}),
+  dismissSpeechLanguageHint: () => call<{ ok: boolean }>('/api/fool/voice/speech-language-hint/dismiss', {}),
   install: (entryId: string, device: 'cpu' | 'cuda') =>
     call<VoiceJob>('/api/fool/voice/install', { device, entry_id: entryId }),
   job: (jobId: string) => call<VoiceJob>(`/api/fool/voice/job/${jobId}`),
@@ -240,14 +239,12 @@ export const voiceApi = {
    *  disarida kalinca Friend penceresi ilk cumlede soguk yuklemeyi oduyordu
    *  (kokoro 24 sn, styletts2 67 sn) -- kullaniciya "dakikalarca model
    *  uyandiriliyor" olarak gorunen sey buydu. */
-  warmVoice: () =>
-    call<{ stt: { status: string }; tts: { status: string } }>('/api/fool/voice/warm', {}),
+  warmVoice: () => call<{ stt: { status: string }; tts: { status: string } }>('/api/fool/voice/warm', {}),
   /** Kip basina secili seslendirme saglayicilari. */
   /** Bir kipin sesini kaydet. Bos saglayici = genel ayara don. */
   /** Kisa bir cumle seslendir. ``elapsed_ms`` panelde gosteriliyor: motorun
    *  GERCEKTEN CUDA'da kosup kosmadiginin tek durust kaniti. */
-  preview: (entryId: string) =>
-    call<VoicePreview>('/api/fool/voice/preview', { entry_id: entryId }),
+  preview: (entryId: string) => call<VoicePreview>('/api/fool/voice/preview', { entry_id: entryId }),
   clones: () => call<{ clones: VoiceClone[] }>('/api/fool/voice/clones'),
   uploadClone: (filename: string, dataBase64: string) =>
     call<{ id: string; label: string }>('/api/fool/voice/clones/upload', {
@@ -256,6 +253,5 @@ export const voiceApi = {
     }),
   selectClone: (entryId: string, cloneId: string) =>
     call<{ ok: boolean }>('/api/fool/voice/clones/select', { clone_id: cloneId, entry_id: entryId }),
-  deleteClone: (cloneId: string) =>
-    call<{ ok: boolean }>('/api/fool/voice/clones/delete', { clone_id: cloneId })
+  deleteClone: (cloneId: string) => call<{ ok: boolean }>('/api/fool/voice/clones/delete', { clone_id: cloneId })
 }

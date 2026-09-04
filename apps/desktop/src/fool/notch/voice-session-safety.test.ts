@@ -53,10 +53,7 @@ describe('ses ACIK SOHBETE gidiyor', () => {
     const { readFileSync } = await import('node:fs')
     const { join } = await import('node:path')
 
-    const bridge = readFileSync(
-      join(import.meta.dirname, '../../store/active-work.ts'),
-      'utf8'
-    )
+    const bridge = readFileSync(join(import.meta.dirname, '../../store/active-work.ts'), 'utf8')
 
     expect(bridge.includes('$voiceSessionId')).toBe(true)
     expect(bridge.includes('FOOL-SEAM: voice-session-bridge')).toBe(true)
@@ -95,8 +92,6 @@ describe('kopru yalnizca ANA pencerede', () => {
     // (bkz. ``store/main-window-only.ts``).
     expect(bridge.includes('whenMainWindow(')).toBe(true)
     // Guard, abonelikten ONCE gelmeli.
-    expect(bridge.indexOf('whenMainWindow(')).toBeLessThan(
-      bridge.indexOf('$activeSessionId.subscribe')
-    )
+    expect(bridge.indexOf('whenMainWindow(')).toBeLessThan(bridge.indexOf('$activeSessionId.subscribe'))
   })
 })

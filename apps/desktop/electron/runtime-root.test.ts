@@ -27,7 +27,10 @@ import {
   runtimeRootAfterMigration
 } from './runtime-root'
 
-const only = (...present: string[]) => (name: string) => present.includes(name)
+const only =
+  (...present: string[]) =>
+  (name: string) =>
+    present.includes(name)
 
 test('yeni ad hermes ICERMIYOR', () => {
   assert.ok(!RUNTIME_DIR_NAME.includes('hermes'))

@@ -67,7 +67,10 @@ describe('kayit olcumu rAF DEGIL', () => {
   it('temizlik dugumu SOKUYOR', () => {
     // Kalan bir ``onaudioprocess``, kapanmis bir kaydin seviyesini yazmaya
     // devam ederdi.
-    const cleanup = RECORDER.slice(RECORDER.indexOf('const cleanup ='), RECORDER.indexOf('useEffect(() => () => cleanup()'))
+    const cleanup = RECORDER.slice(
+      RECORDER.indexOf('const cleanup ='),
+      RECORDER.indexOf('useEffect(() => () => cleanup()')
+    )
 
     expect(cleanup.includes('onaudioprocess = null')).toBe(true)
     expect(cleanup.includes('disconnect()')).toBe(true)
@@ -75,7 +78,10 @@ describe('kayit olcumu rAF DEGIL', () => {
 
   it('sokulduktan sonraki tik ERKEN donuyor', () => {
     // Ses is parcacigi bir kare daha atesleyebilir.
-    const tick = RECORDER.slice(RECORDER.indexOf('const tick = () =>'), RECORDER.indexOf('analyser.getByteTimeDomainData'))
+    const tick = RECORDER.slice(
+      RECORDER.indexOf('const tick = () =>'),
+      RECORDER.indexOf('analyser.getByteTimeDomainData')
+    )
 
     expect(tick.includes('if (!meterRef.current)')).toBe(true)
   })

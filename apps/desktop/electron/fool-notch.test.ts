@@ -11,12 +11,7 @@ import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import {
-  buildNotchWindowUrl,
-  NOTCH_WINDOW_HEIGHT,
-  NOTCH_WINDOW_WIDTH,
-  notchBounds
-} from './fool-notch'
+import { buildNotchWindowUrl, NOTCH_WINDOW_HEIGHT, NOTCH_WINDOW_WIDTH, notchBounds } from './fool-notch'
 
 describe('notchBounds', () => {
   it('ekranın üst kenarına yapışır', () => {
@@ -70,9 +65,7 @@ describe('buildNotchWindowUrl', () => {
   })
 
   it('dev sunucunun sondaki eğik çizgisini iki katına çıkarmaz', () => {
-    expect(buildNotchWindowUrl({ devServer: 'http://127.0.0.1:5174/' })).toBe(
-      'http://127.0.0.1:5174/?win=notch#/'
-    )
+    expect(buildNotchWindowUrl({ devServer: 'http://127.0.0.1:5174/' })).toBe('http://127.0.0.1:5174/?win=notch#/')
   })
 
   it('profili sorgu dizesinde taşır', () => {
@@ -122,7 +115,10 @@ describe('centik profili', () => {
     const main = readFileSync(join(__dirname, 'main.ts'), 'utf8')
     // Yorumlar cikariliyor: sinanan sey ARGUMANIN gecilmesi, cagrinin kac
     // karakter uzun oldugu degil.
-    const code = main.split(chr10).filter(line => !line.trim().startsWith(SLASHES)).join(chr10)
+    const code = main
+      .split(chr10)
+      .filter(line => !line.trim().startsWith(SLASHES))
+      .join(chr10)
     const call = code.slice(code.indexOf('buildNotchWindowUrl({'))
     const args = call.slice(0, call.indexOf('})') + 2)
 

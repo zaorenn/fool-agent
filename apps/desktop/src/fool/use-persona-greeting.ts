@@ -68,9 +68,7 @@ export function usePersonaGreeting(active: boolean): void {
       // Sessiz: selam bir ARAÇ değil. Ağ geçidi henüz ayaktayken düşen bir
       // çağrı için kullanıcıya hata göstermek, hiç istemediği bir özelliğin
       // bozulduğunu bildirmek olurdu.
-      await requestGateway('prompt.submit', { session_id: sessionId, text: PERSONA_KICKOFF }).catch(
-        () => undefined
-      )
+      await requestGateway('prompt.submit', { session_id: sessionId, text: PERSONA_KICKOFF }).catch(() => undefined)
     })()
 
     return () => {

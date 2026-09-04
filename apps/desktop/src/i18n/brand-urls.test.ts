@@ -33,9 +33,7 @@ describe('markalama URL leri bozmuyor', () => {
   })
 
   it('ciplak alan adi oldugu gibi kaliyor', () => {
-    expect(brandText('See hermes-agent.nousresearch.com for docs')).toContain(
-      'hermes-agent.nousresearch.com'
-    )
+    expect(brandText('See hermes-agent.nousresearch.com for docs')).toContain('hermes-agent.nousresearch.com')
   })
 
   it('URL DISINDAKI metin markalanmaya devam ediyor', () => {

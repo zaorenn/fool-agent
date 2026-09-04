@@ -71,10 +71,7 @@ describe('iletilen bas-konus tusu', () => {
   it('ana surec DUZ NESNE gonderiyor -- varsayim yazili', () => {
     // İki taraf ayrışırsa (ana süreç gerçek bir olay göndermeye başlarsa)
     // buradaki no-op gereksizleşir ama zararsızdır; tersi sessiz çökme.
-    const main = readFileSync(
-      join(__dirname, '..', '..', '..', 'electron', 'main.ts'),
-      'utf8'
-    )
+    const main = readFileSync(join(__dirname, '..', '..', '..', 'electron', 'main.ts'), 'utf8')
 
     const send = main.slice(main.indexOf("send('fool:notch:ptt'"))
 

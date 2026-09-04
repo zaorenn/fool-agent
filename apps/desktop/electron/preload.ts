@@ -16,7 +16,6 @@ interface ForwardedPtt {
   type: 'down' | 'up'
 }
 
-
 contextBridge.exposeInMainWorld('foolDesktop', {
   getConnection: profile => ipcRenderer.invoke('fool:connection', profile),
   // Registry-scoped backend resolution: { connectionId, profile } → descriptor.
@@ -105,8 +104,7 @@ contextBridge.exposeInMainWorld('foolDesktop', {
     close: () => ipcRenderer.invoke('fool:notch:close'),
     toggle: () => ipcRenderer.invoke('fool:notch:toggle'),
     shortcut: () => ipcRenderer.invoke('fool:notch:shortcut'),
-    setShortcut: (accelerator: string) =>
-      ipcRenderer.invoke('fool:notch:set-shortcut', accelerator),
+    setShortcut: (accelerator: string) => ipcRenderer.invoke('fool:notch:set-shortcut', accelerator),
     // Istek KIPI de tasiniyor: kisayol yalnizca centigi acmiyor, arkadas
     // turunu de basliyor ve notch oturumu o kapsamla aciyor.
     // Montajda BEKLEYEN niyeti al (ve tuket). Yeni acilan pencerede
@@ -125,8 +123,7 @@ contextBridge.exposeInMainWorld('foolDesktop', {
     // Bas-konus tusu BASKA penceremizden iletildi: centik odakta olmasa da
     // calissin (bkz. ``installPushToTalkForwarding``).
     onPushToTalk: (callback: (event: ForwardedPtt) => void) => {
-      const listener = (_e: unknown, payload: ForwardedPtt) =>
-        callback(payload)
+      const listener = (_e: unknown, payload: ForwardedPtt) => callback(payload)
 
       ipcRenderer.on('fool:notch:ptt', listener)
 

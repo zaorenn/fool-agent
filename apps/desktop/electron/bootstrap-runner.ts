@@ -126,10 +126,7 @@ function checkoutContainsCommit(
       }).trim())
 
   try {
-    run(
-      ['-c', 'windows.appendAtomically=false', 'merge-base', '--is-ancestor', String(commit), 'HEAD'],
-      activeRoot
-    )
+    run(['-c', 'windows.appendAtomically=false', 'merge-base', '--is-ancestor', String(commit), 'HEAD'], activeRoot)
 
     return true
   } catch (err) {

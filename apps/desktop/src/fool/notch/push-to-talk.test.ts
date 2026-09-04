@@ -114,9 +114,9 @@ describe('bas-konuş', () => {
     const state = createPushToTalkState()
     const binding = 'Shift+ControlRight'
 
-    expect(
-      onKeyDown(state, { code: 'ControlRight', shiftKey: true, ctrlKey: true }, 0, binding)
-    ).toEqual({ type: 'start' })
+    expect(onKeyDown(state, { code: 'ControlRight', shiftKey: true, ctrlKey: true }, 0, binding)).toEqual({
+      type: 'start'
+    })
 
     expect(
       onKeyUp(state, { code: 'ShiftLeft', shiftKey: false, ctrlKey: true }, MIN_HOLD_MS + 50, binding)
@@ -127,9 +127,9 @@ describe('bas-konuş', () => {
     const state = createPushToTalkState()
     const binding = 'Shift+ControlRight'
 
-    expect(
-      onKeyDown(state, { code: 'ControlRight', shiftKey: true, ctrlKey: true }, 0, binding)
-    ).toEqual({ type: 'start' })
+    expect(onKeyDown(state, { code: 'ControlRight', shiftKey: true, ctrlKey: true }, 0, binding)).toEqual({
+      type: 'start'
+    })
 
     expect(
       onKeyUp(state, { code: 'ControlRight', shiftKey: true, ctrlKey: false }, MIN_HOLD_MS + 50, binding)

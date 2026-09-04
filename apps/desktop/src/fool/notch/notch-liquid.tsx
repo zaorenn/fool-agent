@@ -98,11 +98,8 @@ export function NotchEdgeWaves({ active }: { active: boolean }) {
           className="absolute top-0 h-px"
           key={index}
           style={{
-            background:
-              'linear-gradient(90deg, transparent 0%, var(--theme-primary) 50%, transparent 100%)',
-            animation: active
-              ? `fool-wave-out 1500ms ease-out ${index * 420}ms infinite`
-              : undefined,
+            background: 'linear-gradient(90deg, transparent 0%, var(--theme-primary) 50%, transparent 100%)',
+            animation: active ? `fool-wave-out 1500ms ease-out ${index * 420}ms infinite` : undefined,
             inset: '0 0 auto 0',
             opacity: active ? undefined : 0,
             transform: active ? undefined : 'scaleX(0)',
@@ -132,10 +129,7 @@ export function useLiquidPhase(sessionActive: boolean): LiquidPhase {
     setSeen(sessionActive)
     setPhase(sessionActive ? 'opening' : 'closing')
 
-    const timer = setTimeout(
-      () => setPhase('idle'),
-      sessionActive ? LIQUID_OPEN_MS : LIQUID_CLOSE_MS
-    )
+    const timer = setTimeout(() => setPhase('idle'), sessionActive ? LIQUID_OPEN_MS : LIQUID_CLOSE_MS)
 
     return () => clearTimeout(timer)
   }, [seen, sessionActive])

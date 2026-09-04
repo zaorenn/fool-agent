@@ -86,7 +86,7 @@ export function setupState(items: VoiceItem[], jobs: Record<string, VoiceJob | n
     return 'idle'
   }
 
-  const states = items.map(item => (item.installed ? 'done' : jobFor(item, jobs)?.state ?? null))
+  const states = items.map(item => (item.installed ? 'done' : (jobFor(item, jobs)?.state ?? null)))
 
   if (states.some(state => state === 'failed')) {
     return 'failed'

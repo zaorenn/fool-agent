@@ -38,11 +38,7 @@ const message = (id: string, role: string, over: Partial<ChatMessage> = {}) =>
   ({ id, role, ...over }) as unknown as ChatMessage
 
 describe('iki yuzey AYNI anahtari uretiyor', () => {
-  const messages = [
-    message('u1', 'user'),
-    message('a1', 'assistant'),
-    message('a2', 'assistant')
-  ]
+  const messages = [message('u1', 'user'), message('a1', 'assistant'), message('a2', 'assistant')]
 
   it('anahtar TURU gosteriyor, mesaji degil', () => {
     // Regresyonun kalbi: bir turda iki asistan mesaji varken iki yuzey

@@ -36,13 +36,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { titlebarButtonClass } from '@/app/shell/titlebar'
 import { TitlebarIcon } from '@/app/shell/titlebar-icon'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 
 import { type LanguageSettings, voiceApi } from './voice-api'
@@ -100,32 +94,29 @@ export function LanguageControls({ onUnavailable }: LanguageControlsProps) {
     }
   }, [onUnavailable])
 
-  const update = useCallback(
-    async (patch: { reply_language?: string; speech_language?: string }) => {
-      // İYİMSER GÜNCELLEME YOK.
-      //
-      // Yazma başarısız olursa açılır liste yeni değeri gösterip yapılandırma
-      // eskisinde kalırdı: panel yalan söyler ve kullanıcı sebebini hiçbir
-      // yerden göremez. Sunucunun döndürdüğü değer tek doğru kaynak.
-      setBusy(true)
-      setError(null)
+  const update = useCallback(async (patch: { reply_language?: string; speech_language?: string }) => {
+    // İYİMSER GÜNCELLEME YOK.
+    //
+    // Yazma başarısız olursa açılır liste yeni değeri gösterip yapılandırma
+    // eskisinde kalırdı: panel yalan söyler ve kullanıcı sebebini hiçbir
+    // yerden göremez. Sunucunun döndürdüğü değer tek doğru kaynak.
+    setBusy(true)
+    setError(null)
 
-      try {
-        const next = await voiceApi.setLanguage(patch)
+    try {
+      const next = await voiceApi.setLanguage(patch)
 
-        setSettings(current => ({
-          languages: current?.languages,
-          reply_language: next.reply_language,
-          speech_language: next.speech_language
-        }))
-      } catch (cause) {
-        setError(cause instanceof Error ? cause.message : 'Could not change the language')
-      } finally {
-        setBusy(false)
-      }
-    },
-    []
-  )
+      setSettings(current => ({
+        languages: current?.languages,
+        reply_language: next.reply_language,
+        speech_language: next.speech_language
+      }))
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not change the language')
+    } finally {
+      setBusy(false)
+    }
+  }, [])
 
   if (!settings) {
     return null
@@ -140,11 +131,7 @@ export function LanguageControls({ onUnavailable }: LanguageControlsProps) {
     <Popover>
       <PopoverTrigger
         aria-label="Reply and voice language"
-        className={cn(
-          titlebarButtonClass,
-          'bg-transparent select-none',
-          active && 'text-amber-400'
-        )}
+        className={cn(titlebarButtonClass, 'bg-transparent select-none', active && 'text-amber-400')}
         data-testid="language-controls-trigger"
         title="Reply and voice language"
       >
@@ -196,16 +183,7 @@ interface PickerProps {
   value: string
 }
 
-function LanguagePicker({
-  disabled,
-  extraLabel,
-  extraValue,
-  hint,
-  label,
-  onChange,
-  options,
-  value
-}: PickerProps) {
+function LanguagePicker({ disabled, extraLabel, extraValue, hint, label, onChange, options, value }: PickerProps) {
   return (
     <div className="space-y-1">
       <span className="text-xs font-medium">{label}</span>

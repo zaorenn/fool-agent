@@ -90,13 +90,11 @@ export function notchBounds(displayBounds: DisplayArea): NotchBounds {
  * '#' işaretinden ÖNCE gelmek zorunda, yoksa HashRouter onları rotanın parçası
  * sanıp yutuyor.
  */
-export function buildNotchWindowUrl(
-  {
-    devServer,
-    profile,
-    rendererIndexPath
-  }: { devServer?: null | string; profile?: null | string; rendererIndexPath?: string } = {}
-): string {
+export function buildNotchWindowUrl({
+  devServer,
+  profile,
+  rendererIndexPath
+}: { devServer?: null | string; profile?: null | string; rendererIndexPath?: string } = {}): string {
   const profileKey = typeof profile === 'string' ? profile.trim() : ''
   const query = `?win=notch${profileKey ? `&profile=${encodeURIComponent(profileKey)}` : ''}`
 

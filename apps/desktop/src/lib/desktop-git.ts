@@ -57,8 +57,7 @@ const remoteGit: GitBridge = {
 
   branchSwitch: (repoPath, branch) => gitPost('branch/switch', { branch, path: repoPath }),
 
-  branchList: async repoPath =>
-    (await gitGet<{ branches: FoolGitBranch[] }>('branches', { path: repoPath })).branches,
+  branchList: async repoPath => (await gitGet<{ branches: FoolGitBranch[] }>('branches', { path: repoPath })).branches,
 
   baseBranchList: async repoPath =>
     (await gitGet<{ branches: FoolGitBaseBranch[] }>('base-branches', { path: repoPath })).branches,
@@ -69,8 +68,7 @@ const remoteGit: GitBridge = {
     (await gitGet<{ diff: string }>('file-diff', { file: filePath, path: repoPath })).diff,
 
   review: {
-    list: (repoPath, scope, baseRef) =>
-      gitGet<FoolReviewList>('review/list', { base: baseRef, path: repoPath, scope }),
+    list: (repoPath, scope, baseRef) => gitGet<FoolReviewList>('review/list', { base: baseRef, path: repoPath, scope }),
 
     diff: async (repoPath, filePath, scope, baseRef, staged) =>
       (await gitGet<{ diff: string }>('review/diff', { base: baseRef, file: filePath, path: repoPath, scope, staged }))

@@ -2128,7 +2128,8 @@ export const ja = defineLocale({
     done: '完了',
     applyingBody:
       'The Fool アップデーターが独自のウィンドウで引き継ぎ、完了後に自動的に The Fool を再度開きます。更新中はご自分で The Fool を開き直さないでください。',
-    applyingBodyBackend: 'リモートバックエンドが更新を適用して再起動します。復帰すると The Fool が自動的に再接続します。',
+    applyingBodyBackend:
+      'リモートバックエンドが更新を適用して再起動します。復帰すると The Fool が自動的に再接続します。',
     applyingClose: 'このウィンドウは更新中に閉じ、その後 The Fool が自動的に再度開きます。',
     errorTitle: '更新が完了しませんでした',
     errorBody: 'ご安心ください。何も失われていません。今すぐ再試行できます。',
@@ -2182,7 +2183,8 @@ export const ja = defineLocale({
     connectExistingDesc:
       'セッショントークンまたはブラウザーサインインでリモートバックエンドを使用します。ローカルインストールは開始されません。',
     installLocalTitle: 'The Fool をローカルにインストール',
-    installLocalDesc: 'The Fool をダウンロードし、Python 環境を作成して、このコンピューターでバックエンドを実行します。',
+    installLocalDesc:
+      'The Fool をダウンロードし、Python 環境を作成して、このコンピューターでバックエンドを実行します。',
     localStartUnavailable:
       'ローカルインストールを開始できません。The Fool Desktop を再起動して、もう一度お試しください。',
     remoteSetupTitle: '既存の The Fool に接続',

@@ -45,12 +45,15 @@ import {
   type PttBinding
 } from './notch/ptt-binding'
 import { $pttCode } from './notch/ptt-store'
+import { DEFAULT_NOTCH_SHORTCUT, formatAccelerator, toAccelerator } from './notch/shortcut-accelerator'
 import {
-  DEFAULT_NOTCH_SHORTCUT,
-  formatAccelerator,
-  toAccelerator
-} from './notch/shortcut-accelerator'
-import { voiceApi, type VoiceCatalog, type VoiceClone, type VoiceItem, type VoiceJob, type VoiceKnob } from './voice-api'
+  voiceApi,
+  type VoiceCatalog,
+  type VoiceClone,
+  type VoiceItem,
+  type VoiceJob,
+  type VoiceKnob
+} from './voice-api'
 
 //: Süren bir kurulum varken yoklama aralığı. Saniyede bir, dakikalarca sürebilen
 //: bir iş için fazlasıyla yeterli ve ağ geçidini meşgul etmiyor.
@@ -125,9 +128,7 @@ function PreviewButton({ item }: { item: VoiceItem }) {
         {busy ? 'Speaking…' : 'Listen'}
       </Button>
       {elapsed !== null && (
-        <span className="text-[0.62rem] text-muted-foreground tabular-nums">
-          {(elapsed / 1000).toFixed(2)} s
-        </span>
+        <span className="text-[0.62rem] text-muted-foreground tabular-nums">{(elapsed / 1000).toFixed(2)} s</span>
       )}
     </div>
   )
@@ -177,7 +178,14 @@ function VoiceRow({
     action = item.active ? (
       <Pill tone="primary">In use</Pill>
     ) : (
-      <Button onClick={() => { triggerHaptic('open'); onSelect(item.id) }} size="sm" variant="outline">
+      <Button
+        onClick={() => {
+          triggerHaptic('open')
+          onSelect(item.id)
+        }}
+        size="sm"
+        variant="outline"
+      >
         Use
       </Button>
     )
@@ -243,9 +251,7 @@ function VoiceRow({
            * motorda CPU/CUDA secmek anlamsiz ve motorun calistigini ima
            * ediyor. Ayrica ``supportsCuda`` kapisinin DISINDA -- CPU-only
            * bozuk bir motor da sebebini gostermeli. */
-          <div className="mt-2 text-[0.62rem] leading-snug text-(--theme-warm)">
-            {item.engine_error}
-          </div>
+          <div className="mt-2 text-[0.62rem] leading-snug text-(--theme-warm)">{item.engine_error}</div>
         ) : item.installed && supportsCuda ? (
           // Kurulumdaki CPU/CUDA secimi hangi PAKETIN inecegini belirler;
           // bu ise modelin her calismada NEREDE kosacagini. Ikisini tek
@@ -273,7 +279,10 @@ function VoiceRow({
                 className="h-6 px-2 text-[0.66rem]"
                 disabled={device === 'cuda' && !item.cuda_available}
                 key={device}
-                onClick={() => { triggerHaptic('open'); onDevice(item.id, device) }}
+                onClick={() => {
+                  triggerHaptic('open')
+                  onDevice(item.id, device)
+                }}
                 size="sm"
                 variant={item.device === device ? 'default' : 'ghost'}
               >
@@ -295,9 +304,7 @@ function VoiceRow({
                 bir kez tiklayip dort dakika bekleyen kullanici uygulamanin
                 dondugunu saniyor. Dugme gizlenmiyor -- karar onun. */}
             {item.cpu_warning && item.device === 'cpu' && (
-              <span className="ml-1 text-[0.62rem] text-(--theme-warm)">
-                {item.cpu_warning}
-              </span>
+              <span className="ml-1 text-[0.62rem] text-(--theme-warm)">{item.cpu_warning}</span>
             )}
           </div>
         ) : null
@@ -348,7 +355,6 @@ function VoiceRow({
     </div>
   )
 }
-
 
 /**
  * Motora özel sayılar: yoğunluk, tempo, adım sayısı.
@@ -425,7 +431,6 @@ function KnobRow({ knob, onCommit }: { knob: VoiceKnob; onCommit: (knobId: strin
     </div>
   )
 }
-
 
 /**
  * Ses klonlama: referans kaydı sürükle-bırak, klonlar arasından seç.
@@ -520,9 +525,7 @@ function CloneSection({
           5–10 seconds of clean speech · wav, mp3, flac, m4a, ogg
         </div>
         {showHelp && item.clone_help && (
-          <div className="mt-1 max-w-xs text-[0.64rem] text-(--text-secondary)">
-            {item.clone_help}
-          </div>
+          <div className="mt-1 max-w-xs text-[0.64rem] text-(--text-secondary)">{item.clone_help}</div>
         )}
       </div>
 
@@ -672,11 +675,25 @@ function PushToTalkRow() {
       action={
         <div className="flex items-center gap-2">
           <Pill>{label}</Pill>
-          <Button onClick={() => { triggerHaptic(); setCapturing(previous => !previous) }} size="sm" variant="outline">
+          <Button
+            onClick={() => {
+              triggerHaptic()
+              setCapturing(previous => !previous)
+            }}
+            size="sm"
+            variant="outline"
+          >
             {capturing ? 'Cancel' : 'Rebind'}
           </Button>
           {stored !== DEFAULT_PTT_CODE && (
-            <Button onClick={() => { triggerHaptic(); $pttCode.set(DEFAULT_PTT_CODE) }} size="sm" variant="ghost">
+            <Button
+              onClick={() => {
+                triggerHaptic()
+                $pttCode.set(DEFAULT_PTT_CODE)
+              }}
+              size="sm"
+              variant="ghost"
+            >
               Reset
             </Button>
           )}
@@ -755,7 +772,10 @@ function WakeEngineRow() {
                   className="h-6 px-2 text-[0.66rem]"
                   disabled={installing}
                   key={engine.id}
-                  onClick={() => { triggerHaptic('open'); void install(engine.id) }}
+                  onClick={() => {
+                    triggerHaptic('open')
+                    void install(engine.id)
+                  }}
                   size="sm"
                   title={`Download and install ${engine.label}`}
                   variant="outline"
@@ -774,7 +794,10 @@ function WakeEngineRow() {
                 // uyandırmaya götürürdü.
                 disabled={!engine.usable || busy === engine.id}
                 key={engine.id}
-                onClick={() => { triggerHaptic('open'); void select(engine.id) }}
+                onClick={() => {
+                  triggerHaptic('open')
+                  void select(engine.id)
+                }}
                 size="sm"
                 title={engine.usable ? engine.description : `${engine.label}: ${engine.blocked_reason}`}
                 variant={engine.active ? 'default' : 'ghost'}
@@ -920,7 +943,10 @@ function WakePhraseRow() {
             <select
               className="h-7 rounded-md border border-(--ui-stroke-tertiary) bg-(--ui-bg-card) px-2 text-[0.78rem] text-(--ui-text-primary)"
               disabled={busy}
-              onChange={event => { triggerHaptic('open'); void pick(event.target.value) }}
+              onChange={event => {
+                triggerHaptic('open')
+                void pick(event.target.value)
+              }}
               value={phrases.find(item => item.phrase === effective)?.model ?? phrases[0]?.model ?? ''}
             >
               {phrases.map(item => (
@@ -931,7 +957,15 @@ function WakePhraseRow() {
             </select>
           )}
           {dirty && custom && (
-            <Button disabled={busy} onClick={() => { triggerHaptic(); void save() }} size="sm" variant="outline">
+            <Button
+              disabled={busy}
+              onClick={() => {
+                triggerHaptic()
+                void save()
+              }}
+              size="sm"
+              variant="outline"
+            >
               {busy ? 'Saving…' : 'Save'}
             </Button>
           )}
@@ -939,7 +973,10 @@ function WakePhraseRow() {
             // Sınama CANLI dinleyiciyi kullanıyor, o yüzden kulak kapalıyken
             // sınanacak bir şey yok.
             disabled={testing || !wake.listening}
-            onClick={() => { triggerHaptic('open'); void test() }}
+            onClick={() => {
+              triggerHaptic('open')
+              void test()
+            }}
             size="sm"
             title={wake.listening ? 'Say the wake word and see whether it fires' : 'Turn the wake word on first'}
             variant="outline"
@@ -1050,7 +1087,10 @@ function NotchShortcutRow() {
         <div className="flex items-center gap-2">
           <Pill>{capturing ? 'Press a combination…' : formatAccelerator(shortcut)}</Pill>
           <Button
-            onClick={() => { triggerHaptic(); setCapturing(previous => !previous) }}
+            onClick={() => {
+              triggerHaptic()
+              setCapturing(previous => !previous)
+            }}
             size="sm"
             variant="outline"
           >
@@ -1058,7 +1098,10 @@ function NotchShortcutRow() {
           </Button>
           {shortcut !== DEFAULT_NOTCH_SHORTCUT && (
             <Button
-              onClick={() => { triggerHaptic(); void apply(DEFAULT_NOTCH_SHORTCUT) }}
+              onClick={() => {
+                triggerHaptic()
+                void apply(DEFAULT_NOTCH_SHORTCUT)
+              }}
               size="sm"
               variant="ghost"
             >
@@ -1357,7 +1400,18 @@ export function VoiceSettings() {
           </div>
         )}
         {tts.map(item => (
-          <VoiceRow clones={clones} item={item} key={item.id} onClone={onClone} onDevice={setDevice} onInstall={install} onKnob={setKnob} onSelect={select} onVoice={setVoice} pending={jobs[item.id] ?? null} />
+          <VoiceRow
+            clones={clones}
+            item={item}
+            key={item.id}
+            onClone={onClone}
+            onDevice={setDevice}
+            onInstall={install}
+            onKnob={setKnob}
+            onSelect={select}
+            onVoice={setVoice}
+            pending={jobs[item.id] ?? null}
+          />
         ))}
       </SettingsSection>
 
@@ -1370,7 +1424,18 @@ export function VoiceSettings() {
 
       <SettingsSection icon={Mic} title="Speech to text">
         {stt.map(item => (
-          <VoiceRow clones={clones} item={item} key={item.id} onClone={onClone} onDevice={setDevice} onInstall={install} onKnob={setKnob} onSelect={select} onVoice={setVoice} pending={jobs[item.id] ?? null} />
+          <VoiceRow
+            clones={clones}
+            item={item}
+            key={item.id}
+            onClone={onClone}
+            onDevice={setDevice}
+            onInstall={install}
+            onKnob={setKnob}
+            onSelect={select}
+            onVoice={setVoice}
+            pending={jobs[item.id] ?? null}
+          />
         ))}
       </SettingsSection>
 

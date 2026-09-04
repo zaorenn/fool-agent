@@ -42,9 +42,7 @@ const code = (source: string) =>
     .filter(line => !line.trim().startsWith('//') && !line.trim().startsWith('*'))
     .join(NEWLINE)
 
-const AUTO_SPEAK = code(
-  read('..', '..', 'app', 'chat', 'composer', 'hooks', 'use-auto-speak-replies.ts')
-)
+const AUTO_SPEAK = code(read('..', '..', 'app', 'chat', 'composer', 'hooks', 'use-auto-speak-replies.ts'))
 
 const COMPOSER = read('..', '..', 'app', 'chat', 'composer', 'hooks', 'use-composer-voice.ts')
 const SHELL = read('notch-shell.tsx')
@@ -66,9 +64,7 @@ describe('cekilen yuzey cevabi TUKETIYOR', () => {
   it('ret KORUMALARDAN once hesaplaniyor', () => {
     // Cevabi korumadan SONRA okumak, kaydedilecek kimligin o an artik
     // degismis olmasi demekti.
-    expect(AUTO_SPEAK.indexOf('const declineCurrent')).toBeLessThan(
-      AUTO_SPEAK.indexOf('if (conversationActive) {')
-    )
+    expect(AUTO_SPEAK.indexOf('const declineCurrent')).toBeLessThan(AUTO_SPEAK.indexOf('if (conversationActive) {'))
   })
 
   it('ret PLANLAYICIYA baglaniyor', () => {

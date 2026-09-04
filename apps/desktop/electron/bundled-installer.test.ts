@@ -41,8 +41,8 @@ test('kurulum betikleri PAKETE giriyor', () => {
 
 test('paketlenen betik DEPODAN aliniyor -- surumle es', () => {
   // Kaynak ağaçtan kopyalanıyor, yani derlenen sürümle tanım gereği aynı.
-  const entries = PKG.build.extraResources.filter((e: { to: string }) =>
-    e.to === 'install.ps1' || e.to === 'install.sh'
+  const entries = PKG.build.extraResources.filter(
+    (e: { to: string }) => e.to === 'install.ps1' || e.to === 'install.sh'
   )
 
   for (const entry of entries) {

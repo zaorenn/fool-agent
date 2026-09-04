@@ -36,13 +36,7 @@ export const $accentOverride = atom<null | string>(null)
  * kenarlıklar, metin kontrastları el yapımı). Burada yalnızca "vurgu" anlamına
  * gelen değişkenler var — odak halkası, aktif sekme, düğme, notch dalga formu.
  */
-const ACCENT_VARS = [
-  '--theme-primary',
-  '--theme-midground',
-  '--ring',
-  '--primary',
-  '--composer-ring'
-] as const
+const ACCENT_VARS = ['--theme-primary', '--theme-midground', '--ring', '--primary', '--composer-ring'] as const
 
 /** Hex rengi geçerli mi? Geçersiz değer tüm arayüzü renksiz bırakırdı. */
 export function isValidHex(value: unknown): value is string {
@@ -86,9 +80,7 @@ export function accentFromSkin(skin: unknown, dark: boolean): null | string {
 
   const record = skin as Record<string, unknown>
 
-  const section = (dark ? record.colors : record.light_colors ?? record.colors) as
-    | Record<string, unknown>
-    | undefined
+  const section = (dark ? record.colors : (record.light_colors ?? record.colors)) as Record<string, unknown> | undefined
 
   const value = section?.ui_accent
 

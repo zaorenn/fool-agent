@@ -1,13 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  createFillerState,
-  FILL_AFTER_MS,
-  FILLERS,
-  resetTurn,
-  shouldFill,
-  takeFiller
-} from './thinking-filler'
+import { createFillerState, FILL_AFTER_MS, FILLERS, resetTurn, shouldFill, takeFiller } from './thinking-filler'
 
 const input = (over: Partial<Parameters<typeof shouldFill>[1]> = {}) => ({
   elapsedMs: FILL_AFTER_MS,

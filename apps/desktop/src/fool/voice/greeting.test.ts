@@ -9,15 +9,7 @@
 
 import { describe, expect, it } from 'vitest'
 
-import {
-  greeting,
-  hasFailed,
-  isWarm,
-  needsWaking,
-  stageLine,
-  warmupCaption,
-  warmupSettled
-} from './greeting'
+import { greeting, hasFailed, isWarm, needsWaking, stageLine, warmupCaption, warmupSettled } from './greeting'
 
 const ASCII_ONLY = /^[ -~]+$/
 

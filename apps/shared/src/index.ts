@@ -45,6 +45,10 @@ export {
   type CronTriggerController,
   type CronTriggerRunResult
 } from './cron-trigger-controller'
+// FOOL-SEAM: shared-branding
+// Marka dönüşümü iki derleme tarafından da kullanılıyor: masaüstü uygulaması
+// ve web panosu. Tek kaynak, yoksa iki yüzey zamanla ayrışır.
+export { applyFoolBrand, BRAND, brandText } from './fool-branding'
 export {
   type ConnectionState,
   type GatewayClientOptions,
@@ -69,17 +73,13 @@ export {
 } from './skin'
 export {
   buildFoolWebSocketUrl,
+  type FoolWebSocketUrlOptions,
   type GatewayAuthMode,
   GatewayReauthRequiredError,
   type GatewayWsConnection,
   type GatewayWsUrlResult,
-  type FoolWebSocketUrlOptions,
   isGatewayReauthRequired,
   resolveGatewayWsUrl,
   type ResolveGatewayWsUrlDeps,
   type WebSocketAuthParam
 } from './websocket-url'
-// FOOL-SEAM: shared-branding
-// Marka dönüşümü iki derleme tarafından da kullanılıyor: masaüstü uygulaması
-// ve web panosu. Tek kaynak, yoksa iki yüzey zamanla ayrışır.
-export { applyFoolBrand, BRAND, brandText } from './fool-branding'

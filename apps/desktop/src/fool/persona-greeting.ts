@@ -73,11 +73,6 @@ export interface GreetingState {
 /** Selam gönderilsin mi? Dört koşul da sağlanmalı. */
 export function shouldGreet(state: GreetingState): boolean {
   return (
-    state.enabled &&
-    !state.met &&
-    !state.attempted &&
-    !state.busy &&
-    state.sessionId !== '' &&
-    state.messageCount === 0
+    state.enabled && !state.met && !state.attempted && !state.busy && state.sessionId !== '' && state.messageCount === 0
   )
 }

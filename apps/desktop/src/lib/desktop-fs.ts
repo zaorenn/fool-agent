@@ -1,9 +1,4 @@
-import type {
-  FoolConnection,
-  FoolReadDirResult,
-  FoolReadFileTextResult,
-  FoolSelectPathsOptions
-} from '@/global'
+import type { FoolConnection, FoolReadDirResult, FoolReadFileTextResult, FoolSelectPathsOptions } from '@/global'
 import { $connection } from '@/store/session'
 
 export interface DesktopFsRemotePicker {

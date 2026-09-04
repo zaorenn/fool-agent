@@ -6,12 +6,7 @@
 
 import { describe, expect, it } from 'vitest'
 
-import {
-  acceleratorKey,
-  DEFAULT_NOTCH_SHORTCUT,
-  formatAccelerator,
-  toAccelerator
-} from './shortcut-accelerator'
+import { acceleratorKey, DEFAULT_NOTCH_SHORTCUT, formatAccelerator, toAccelerator } from './shortcut-accelerator'
 
 const chord = (over: Partial<Parameters<typeof toAccelerator>[0]>) =>
   toAccelerator({ alt: false, code: 'KeyV', ctrl: false, meta: false, shift: false, ...over })
@@ -42,12 +37,9 @@ describe('accelerator', () => {
     expect(toAccelerator({ alt: false, code: 'F13', ctrl: false, meta: false, shift: false })).toBe('F13')
   })
 
-  it.each(['ControlLeft', 'AltRight', 'ShiftLeft', 'MetaLeft'])(
-    'tek basina degistirici (%s) kisayol olamaz',
-    code => {
-      expect(chord({ code, ctrl: true })).toBe('')
-    }
-  )
+  it.each(['ControlLeft', 'AltRight', 'ShiftLeft', 'MetaLeft'])('tek basina degistirici (%s) kisayol olamaz', code => {
+    expect(chord({ code, ctrl: true })).toBe('')
+  })
 
   it('bilinmeyen kod OLDUGU GIBI gecirilmiyor', () => {
     // Electron onu reddeder ve kullanici ayarin neden uygulanmadigini goremez.

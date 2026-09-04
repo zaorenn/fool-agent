@@ -16,12 +16,7 @@ import assert from 'node:assert/strict'
 
 import { test } from 'vitest'
 
-import {
-  classifyRuntimeVersion,
-  describeRuntimeVersion,
-  isUsableCommit,
-  needsRepair
-} from './runtime-version'
+import { classifyRuntimeVersion, describeRuntimeVersion, isUsableCommit, needsRepair } from './runtime-version'
 
 const PINNED = 'b08e32ec1aae0f4631ccef9b07dce1de600e5b49'
 

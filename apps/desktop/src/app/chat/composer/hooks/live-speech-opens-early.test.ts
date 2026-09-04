@@ -38,20 +38,14 @@ describe('canli konusma erken aciliyor', () => {
   })
 
   it('abonelik openLiveSpeech CAGIRIYOR', () => {
-    const effect = SOURCE.slice(
-      SOURCE.indexOf('const open = () =>'),
-      SOURCE.indexOf('$messagesForSpeech.subscribe')
-    )
+    const effect = SOURCE.slice(SOURCE.indexOf('const open = () =>'), SOURCE.indexOf('$messagesForSpeech.subscribe'))
 
     expect(effect.includes('openLiveSpeech(response.id)')).toBe(true)
   })
 
   it('ayni cevap icin IKI KEZ acilmiyor', () => {
     // ``openLiveSpeech`` ``responseIdRef``i hemen yaziyor; muhafiz o.
-    const effect = SOURCE.slice(
-      SOURCE.indexOf('const open = () =>'),
-      SOURCE.indexOf('$messagesForSpeech.subscribe')
-    )
+    const effect = SOURCE.slice(SOURCE.indexOf('const open = () =>'), SOURCE.indexOf('$messagesForSpeech.subscribe'))
 
     expect(effect.includes('responseIdRef.current === response.id')).toBe(true)
   })
@@ -59,10 +53,7 @@ describe('canli konusma erken aciliyor', () => {
   it('yalnizca SESLI turda aciliyor', () => {
     // ``awaitingSpokenResponseRef`` gonderimde kuruluyor: yazili bir mesaj
     // sesli sohbet kipini tetiklememeli.
-    const effect = SOURCE.slice(
-      SOURCE.indexOf('const open = () =>'),
-      SOURCE.indexOf('$messagesForSpeech.subscribe')
-    )
+    const effect = SOURCE.slice(SOURCE.indexOf('const open = () =>'), SOURCE.indexOf('$messagesForSpeech.subscribe'))
 
     expect(effect.includes('awaitingSpokenResponseRef.current')).toBe(true)
   })

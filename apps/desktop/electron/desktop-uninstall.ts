@@ -191,15 +191,7 @@ function buildPosixCleanupScript({ desktopPid, pythonExe, pythonPath, agentRoot,
  * Removal: even after the desktop PID is gone, Windows releases directory
  * handles lazily, so a single `rmdir /s /q` can half-fail — retry up to 10x.
  */
-function buildWindowsCleanupScript({
-  desktopPid,
-  pythonExe,
-  pythonPath,
-  agentRoot,
-  uninstallArgs,
-  appPath,
-  foolHome
-}) {
+function buildWindowsCleanupScript({ desktopPid, pythonExe, pythonPath, agentRoot, uninstallArgs, appPath, foolHome }) {
   const pid = Number(desktopPid) || 0
   // cmd.exe has no string escaping inside quotes; strip embedded quotes (paths
   // under %LOCALAPPDATA% never contain them). `&`/`^` in a path would still be

@@ -31,7 +31,7 @@ const FIRE = MAIN.slice(
   // Imza artik KIP aliyor (uyandirma 'wake' ile cagiriyor), o yuzden capa
   // parantezsiz.
   MAIN.indexOf('function fireNotchShortcut('),
-  MAIN.indexOf('ipcMain.handle(\'fool:notch:take-intent\'')
+  MAIN.indexOf("ipcMain.handle('fool:notch:take-intent'")
 )
 
 describe('kisayol niyeti', () => {

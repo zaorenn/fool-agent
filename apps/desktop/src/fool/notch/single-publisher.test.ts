@@ -76,10 +76,7 @@ describe('sinir gecen yayinci YALNIZCA ana pencerede', () => {
 
   /** Sınavın dayandığı olgu: çentik gerçekten aynı paketi çalıştırıyor. */
   it('centik AYNI bundle ile aciliyor', () => {
-    const controller = readFileSync(
-      join(import.meta.dirname, '../../app/contrib/controller.tsx'),
-      'utf8'
-    )
+    const controller = readFileSync(join(import.meta.dirname, '../../app/contrib/controller.tsx'), 'utf8')
 
     expect(controller.includes('isNotchWindow()')).toBe(true)
     expect(controller.includes('<NotchShell />')).toBe(true)

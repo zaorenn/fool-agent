@@ -276,10 +276,7 @@ export function applyWakeStopResult(result: WakeStopResponse | null | undefined)
  * Dinleyici ağ geçidinde bırakılıyor; burada YENİDEN kuruluyor, yoksa çalışan
  * dinleyici eski ifadeyi duymaya devam ederdi.
  */
-export async function setWakePhrase(
-  phrase: string,
-  request: WakeRequester = gatewayRequester
-): Promise<void> {
+export async function setWakePhrase(phrase: string, request: WakeRequester = gatewayRequester): Promise<void> {
   const result = await request<{ phrase?: string; provider?: string }>('wake.phrase', { phrase })
 
   // Yalnizca IFADE tutuluyor: sağlayıcı bir uygulama ayrıntısı ve arayüzde
@@ -309,9 +306,7 @@ export async function setWakePhrase(
  * Kullanıcı kulağı kapalı tutuyorsa ifade değiştirmek onu AÇMAMALI, o yüzden
  * kapı kaldırılmıyor, doğru alana taşınıyor.
  */
-export async function rearmWakeAfterConfigChange(
-  request: WakeRequester = gatewayRequester
-): Promise<void> {
+export async function rearmWakeAfterConfigChange(request: WakeRequester = gatewayRequester): Promise<void> {
   const state = $wakeWord.get()
 
   if (!state.enabled && !state.listening) {

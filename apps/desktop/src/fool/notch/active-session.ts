@@ -128,7 +128,6 @@ export async function waitForVoiceSessionOrOpen(
   return waitForVoiceSession(openTimeoutMs)
 }
 
-
 /**
  * "Şunu GÖNDER" — çentikten ana pencereye.
  *
@@ -196,7 +195,6 @@ export function parseVoiceSubmit(raw: unknown): null | VoiceSubmitRequest {
   }
 }
 
-
 /**
  * Uyandırma turu SÜRÜYOR mu — PENCERELER ARASI.
  *
@@ -244,7 +242,6 @@ export function wakeTurnIsActive(raw: unknown): boolean {
   return raw === '1'
 }
 
-
 /**
  * Çentiğin ses oturumu AÇIK mı — PENCERELER ARASI.
  *
@@ -277,7 +274,6 @@ export function notchVoiceIsActive(): boolean {
   return $notchVoiceActive.get() === '1'
 }
 
-
 /**
  * KONUŞULAN alt yazı — PENCERELER ARASI.
  *
@@ -307,7 +303,6 @@ export const $spokenSubtitle = sharedAtom<string>('fool.desktop.voice.subtitle',
 export function setSpokenSubtitle(text: string): void {
   $spokenSubtitle.set(text)
 }
-
 
 /**
  * Ana penceredeki tur SÜRÜYOR mu — PENCERELER ARASI.

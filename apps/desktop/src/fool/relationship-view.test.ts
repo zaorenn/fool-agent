@@ -6,13 +6,7 @@
 
 import { describe, expect, it } from 'vitest'
 
-import {
-  describeSince,
-  shouldRender,
-  stanceFill,
-  stanceTone,
-  warmthPercent
-} from './relationship-view'
+import { describeSince, shouldRender, stanceFill, stanceTone, warmthPercent } from './relationship-view'
 
 describe('warmthPercent', () => {
   it('degeri oldugu gibi veriyor', () => {

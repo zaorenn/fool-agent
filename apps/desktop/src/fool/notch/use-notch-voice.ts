@@ -26,11 +26,7 @@ import { blobToDataUrl } from '@/app/session/hooks/use-prompt-actions/utils'
 import { transcribeAudio } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { monitorSpeechDuringPlayback } from '@/lib/voice-barge-in'
-import {
-  interruptVoicePlayback,
-  playSpeechText,
-  takeVoicePlaybackInterrupted
-} from '@/lib/voice-playback'
+import { interruptVoicePlayback, playSpeechText, takeVoicePlaybackInterrupted } from '@/lib/voice-playback'
 import { isVoiceStopCommand } from '@/lib/voice-stop-word'
 import { $busy, $messages } from '@/store/session'
 import { $voicePlayback } from '@/store/voice-playback'
@@ -39,7 +35,15 @@ import { voiceApi } from '../voice-api'
 import { claimVoice, releaseVoice } from '../voice-owner'
 import { $voiceWarm } from '../voice-warm'
 
-import { $mainTurnBusy, $spokenSubtitle, $voiceSessionId, requestVoiceSubmit, setNotchVoiceActive, setSpokenSubtitle, waitForVoiceSessionOrOpen } from './active-session'
+import {
+  $mainTurnBusy,
+  $spokenSubtitle,
+  $voiceSessionId,
+  requestVoiceSubmit,
+  setNotchVoiceActive,
+  setSpokenSubtitle,
+  waitForVoiceSessionOrOpen
+} from './active-session'
 import {
   type BargeGate,
   claimBarge,
@@ -49,21 +53,11 @@ import {
   releaseBarge,
   shouldMonitorBargeIn
 } from './barge-in'
-import {
-  type BeginActivation,
-  listenOptionsFor,
-  modeForActivation
-} from './hands-free'
+import { type BeginActivation, listenOptionsFor, modeForActivation } from './hands-free'
 import { interruptThenSubmit, shouldInterruptTurn } from './interrupt'
 import { $listenMode } from './listen-mode'
 import { createPttSpeechState, observeLevel } from './ptt-speech'
-import {
-  createFillerState,
-  FILL_AFTER_MS,
-  resetTurn,
-  shouldFill,
-  takeFiller
-} from './thinking-filler'
+import { createFillerState, FILL_AFTER_MS, resetTurn, shouldFill, takeFiller } from './thinking-filler'
 
 /**
  * Baska bir yuzeyin ustlendigi cevap kimlikleri icin ust sinir.
@@ -334,129 +328,132 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
     return pending
   }, [])
 
-  const begin = useCallback((activation: BeginActivation = 'key') => {
-    // Motor ISINMADAN bas-konus acilmiyor.
-    //
-    // Istenen: "sadece isinma hazir oldugunda notch bas konusu calissin, o
-    // zamana kadar notchta TTS isiniyor gibi bilgi yazsin."
-    //
-    // Sebebi olculdu: soguk motorda ilk cumle 36,8 sn suruyor. Mikrofonu o
-    // sirada acmak, kullanicinin konusup dakikalarca sessizlik dinlemesi
-    // demek -- ve konustugu cumle o sure boyunca hicbir yere gitmiyor.
-    //
-    // ``failed`` ENGELLEMIYOR: isinmayi bekleyemedigimiz icin kullaniciyi
-    // susturmak, isinmamis bir motorla konusmasina izin vermekten kotu.
-    if (activation !== 'auto' && $voiceWarm.get() === 'warming') {
-      // Metin KULLANICIYA gorunuyor.
-      setError('Warming up the voice — one moment')
-      setStatus('idle')
+  const begin = useCallback(
+    (activation: BeginActivation = 'key') => {
+      // Motor ISINMADAN bas-konus acilmiyor.
+      //
+      // Istenen: "sadece isinma hazir oldugunda notch bas konusu calissin, o
+      // zamana kadar notchta TTS isiniyor gibi bilgi yazsin."
+      //
+      // Sebebi olculdu: soguk motorda ilk cumle 36,8 sn suruyor. Mikrofonu o
+      // sirada acmak, kullanicinin konusup dakikalarca sessizlik dinlemesi
+      // demek -- ve konustugu cumle o sure boyunca hicbir yere gitmiyor.
+      //
+      // ``failed`` ENGELLEMIYOR: isinmayi bekleyemedigimiz icin kullaniciyi
+      // susturmak, isinmamis bir motorla konusmasina izin vermekten kotu.
+      if (activation !== 'auto' && $voiceWarm.get() === 'warming') {
+        // Metin KULLANICIYA gorunuyor.
+        setError('Warming up the voice — one moment')
+        setStatus('idle')
 
-      return
-    }
-
-    setError(null)
-    // Oturumu ŞİMDİ açtırmaya başla: kullanıcı konuşurken hazır olsun.
-    prewarmSession()
-    discardRef.current = false
-    // Tuşa basmak açık bir niyet: sesle başlamış bir yakalama varsa devral.
-    // Kapıyı ilk gelene bırakmak tuşu sessizce yutardı — mikrofon açılmaz,
-    // kullanıcı boşluğa konuşurdu.
-    forceClaimBarge(bargeRef.current, 'key')
-    // Kullanici notch'ta konusmaya basladi: sesin sahibi o (Friend
-    // penceresi acik degilse).
-    claimVoice('notch')
-    setCapturing(false)
-    setHeardSpeech(false)
-
-    // ŞERİT DİNLEME BAŞLARKEN temizleniyor, yazıya dökme bitince DEĞİL.
-    //
-    // Ölçülen hata: temizlik ``setTranscript``in yanındaydı, yani ancak
-    // konuşma yazıya dökülünce oluyordu. Kullanıcı sağ Ctrl'ye bastığında
-    // önceki cevabın şeridi hâlâ duruyor: ``subtitleMode`` açık kaldığı için
-    // çentik geniş kalıyor ve dinleme arkaplanı yüzünden küçülmeden kırmızıya
-    // dönüyordu. Kullanıcının bildirdiği birebir buydu.
-    setSpokenSubtitle('')
-    setStatus('listening')
-
-    // Motoru KULLANICI KONUŞURKEN ısıt.
-    //
-    // Isıtma bugüne kadar yalnızca çentik oturumu AÇILIRKEN çağrılıyordu.
-    // Motor boşta 300 sn sonra boşaltıldığı için (kullanıcının kendi isteği)
-    // her uzun aradan sonra soğuk bedel geri geliyordu: ölçüldü, kokoro
-    // soğuk 29,43 sn / sıcak 1,07 sn.
-    //
-    // Zamanlayıcıyla sıcak tutmak YANLIŞ cevap olurdu -- kullanıcı motorun
-    // 5 dakika sonra kapanmasını açıkça istedi. Doğru an bu: mikrofon
-    // açılıyor, kullanıcı konuşmaya başlıyor ve yükleme o saniyelerin
-    // arkasına gizleniyor. Cevap akmaya başladığında motor ayakta oluyor.
-    //
-    // Çağrı UCUZ ve korumalı: uç nokta hemen dönüyor ve ``tts_warmup.warm``
-    // zaten ısınıyorsa yeni iş başlatmıyor.
-    void voiceApi.warmVoice().catch(() => undefined)
-    // Bekleyen "sesi bekle" bayrağı düşüyor: kullanıcı yeni bir tur açtı.
-    awaitingPlaybackRef.current = false
-
-    // ARAYA GİRME BURADA DEĞİL.
-    //
-    // Eskiden ``stopVoicePlayback()`` ve ``haltTurn()`` tam burada, tuşa
-    // BASILDIĞI anda çağrılıyordu. Yani sağ Ctrl'ye yanlışlıkla dokunmak --
-    // ya da ne söyleyeceğine karar vermeden basmak -- modelin cevabını
-    // öldürüyordu, üstelik geri dönüşü olmadan.
-    //
-    // Kullanıcının istediği kural: tuşa basılması yetmez, o tuş basılıyken
-    // GERÇEKTEN konuşulduğu anlaşıldığında kesilsin. Karar aşağıdaki
-    // ``onLevel`` geri çağrısında, eşik ve süre kuralı ``./ptt-speech.ts``de.
-    speechGateRef.current = createPttSpeechState()
-
-    // Eller serbest kipte kaydın sınırını sessizlik çiziyor; bas-konuşta
-    // KULLANICI çiziyor. İkisine aynı ayarı vermek, tuş hâlâ basılıyken
-    // kaydın kapanması demekti — cümlenin ortasında kesilen bir kayıt.
-    const options = listenOptionsFor(modeForActivation(activation))
-
-    const onLevel = (level: number) => {
-      const speaking = observeLevel(speechGateRef.current, {
-        level,
-        now: Date.now(),
-        // Eşik oynatma sırasında yükseliyor: hoparlör sızıntısı tek başına
-        // araya girme sayılmamalı.
-        playing: $voicePlayback.get().status !== 'idle'
-      })
-
-      if (!speaking) {
         return
       }
 
-      setHeardSpeech(true)
-      // ŞİMDİ araya giriliyor: akış oturumu kapanıyor, ses kesiliyor ve süren
-      // tur durduruluyor -- yoksa eski cevabın kalanı yeni turdan sonra
-      // konuşulur.
-      // Susturmak ve MODELE SOYLEMEK tek is: bkz. ``interruptVoicePlayback``.
-      // Burada yalnizca susturuluyordu, yani centikte sozunu kestiginizde
-      // model bunu hic ogrenmiyor ve cumlesini bitirmis gibi devam ediyordu.
-      interruptVoicePlayback()
-      void haltTurn().catch(() => undefined)
-    }
+      setError(null)
+      // Oturumu ŞİMDİ açtırmaya başla: kullanıcı konuşurken hazır olsun.
+      prewarmSession()
+      discardRef.current = false
+      // Tuşa basmak açık bir niyet: sesle başlamış bir yakalama varsa devral.
+      // Kapıyı ilk gelene bırakmak tuşu sessizce yutardı — mikrofon açılmaz,
+      // kullanıcı boşluğa konuşurdu.
+      forceClaimBarge(bargeRef.current, 'key')
+      // Kullanici notch'ta konusmaya basladi: sesin sahibi o (Friend
+      // penceresi acik degilse).
+      claimVoice('notch')
+      setCapturing(false)
+      setHeardSpeech(false)
 
-    void mic
-      .start({
-        ...(options ?? {}),
-        onLevel,
-        ...(options
-          ? {
-              onSilence: () => {
-                // Sessizlik turu bitirdi: konuşma duyulmuştu, yoksa
-                // ``onSilence`` değil boşta zaman aşımı çalışırdı.
-                setHeardSpeech(true)
-                commitRef.current()
+      // ŞERİT DİNLEME BAŞLARKEN temizleniyor, yazıya dökme bitince DEĞİL.
+      //
+      // Ölçülen hata: temizlik ``setTranscript``in yanındaydı, yani ancak
+      // konuşma yazıya dökülünce oluyordu. Kullanıcı sağ Ctrl'ye bastığında
+      // önceki cevabın şeridi hâlâ duruyor: ``subtitleMode`` açık kaldığı için
+      // çentik geniş kalıyor ve dinleme arkaplanı yüzünden küçülmeden kırmızıya
+      // dönüyordu. Kullanıcının bildirdiği birebir buydu.
+      setSpokenSubtitle('')
+      setStatus('listening')
+
+      // Motoru KULLANICI KONUŞURKEN ısıt.
+      //
+      // Isıtma bugüne kadar yalnızca çentik oturumu AÇILIRKEN çağrılıyordu.
+      // Motor boşta 300 sn sonra boşaltıldığı için (kullanıcının kendi isteği)
+      // her uzun aradan sonra soğuk bedel geri geliyordu: ölçüldü, kokoro
+      // soğuk 29,43 sn / sıcak 1,07 sn.
+      //
+      // Zamanlayıcıyla sıcak tutmak YANLIŞ cevap olurdu -- kullanıcı motorun
+      // 5 dakika sonra kapanmasını açıkça istedi. Doğru an bu: mikrofon
+      // açılıyor, kullanıcı konuşmaya başlıyor ve yükleme o saniyelerin
+      // arkasına gizleniyor. Cevap akmaya başladığında motor ayakta oluyor.
+      //
+      // Çağrı UCUZ ve korumalı: uç nokta hemen dönüyor ve ``tts_warmup.warm``
+      // zaten ısınıyorsa yeni iş başlatmıyor.
+      void voiceApi.warmVoice().catch(() => undefined)
+      // Bekleyen "sesi bekle" bayrağı düşüyor: kullanıcı yeni bir tur açtı.
+      awaitingPlaybackRef.current = false
+
+      // ARAYA GİRME BURADA DEĞİL.
+      //
+      // Eskiden ``stopVoicePlayback()`` ve ``haltTurn()`` tam burada, tuşa
+      // BASILDIĞI anda çağrılıyordu. Yani sağ Ctrl'ye yanlışlıkla dokunmak --
+      // ya da ne söyleyeceğine karar vermeden basmak -- modelin cevabını
+      // öldürüyordu, üstelik geri dönüşü olmadan.
+      //
+      // Kullanıcının istediği kural: tuşa basılması yetmez, o tuş basılıyken
+      // GERÇEKTEN konuşulduğu anlaşıldığında kesilsin. Karar aşağıdaki
+      // ``onLevel`` geri çağrısında, eşik ve süre kuralı ``./ptt-speech.ts``de.
+      speechGateRef.current = createPttSpeechState()
+
+      // Eller serbest kipte kaydın sınırını sessizlik çiziyor; bas-konuşta
+      // KULLANICI çiziyor. İkisine aynı ayarı vermek, tuş hâlâ basılıyken
+      // kaydın kapanması demekti — cümlenin ortasında kesilen bir kayıt.
+      const options = listenOptionsFor(modeForActivation(activation))
+
+      const onLevel = (level: number) => {
+        const speaking = observeLevel(speechGateRef.current, {
+          level,
+          now: Date.now(),
+          // Eşik oynatma sırasında yükseliyor: hoparlör sızıntısı tek başına
+          // araya girme sayılmamalı.
+          playing: $voicePlayback.get().status !== 'idle'
+        })
+
+        if (!speaking) {
+          return
+        }
+
+        setHeardSpeech(true)
+        // ŞİMDİ araya giriliyor: akış oturumu kapanıyor, ses kesiliyor ve süren
+        // tur durduruluyor -- yoksa eski cevabın kalanı yeni turdan sonra
+        // konuşulur.
+        // Susturmak ve MODELE SOYLEMEK tek is: bkz. ``interruptVoicePlayback``.
+        // Burada yalnizca susturuluyordu, yani centikte sozunu kestiginizde
+        // model bunu hic ogrenmiyor ve cumlesini bitirmis gibi devam ediyordu.
+        interruptVoicePlayback()
+        void haltTurn().catch(() => undefined)
+      }
+
+      void mic
+        .start({
+          ...(options ?? {}),
+          onLevel,
+          ...(options
+            ? {
+                onSilence: () => {
+                  // Sessizlik turu bitirdi: konuşma duyulmuştu, yoksa
+                  // ``onSilence`` değil boşta zaman aşımı çalışırdı.
+                  setHeardSpeech(true)
+                  commitRef.current()
+                }
               }
-            }
-          : {})
-      })
-      .catch((cause: unknown) => {
-        setStatus('idle')
-        setError(cause instanceof Error ? cause.message : String(cause))
-      })
-  }, [haltTurn, mic, prewarmSession])
+            : {})
+        })
+        .catch((cause: unknown) => {
+          setStatus('idle')
+          setError(cause instanceof Error ? cause.message : String(cause))
+        })
+    },
+    [haltTurn, mic, prewarmSession]
+  )
 
   /**
    * Notch kapandı — mikrofonu bırak ama SOHBETİ BİTİRME.
@@ -495,8 +492,6 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
   // Eskiden burasi bos donuyordu ve kullanici, ekranda acik bir sohbet olmadigi
   // icin, konustugu cumleyi kaybediyordu.
 
-
-
   // Yazıya dök ve gönder. İKİ giriş yolu paylaşıyor: tuşla biten kayıt ve
   // araya girerken yakalanan cümle. Ayrı yazmak, ikisinden birinin canlı
   // oturum kimliği gibi bir ayrıntıyı kaçırması demekti.
@@ -522,11 +517,7 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
         new Promise<never>((_resolve, reject) =>
           setTimeout(
             () =>
-              reject(
-                new Error(
-                  'Transcription is taking too long — the engine may be busy with the current answer'
-                )
-              ),
+              reject(new Error('Transcription is taking too long — the engine may be busy with the current answer')),
             TRANSCRIBE_LIMIT_MS
           )
         )
@@ -748,7 +739,7 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
   // State'e tasimak izleyiciyi her durum degisiminde sokup atardi; o da her
   // seferinde yeni bir ``getUserMedia`` akisi ve sifirlanan gurultu tabani
   // demek.
-   
+
   useEffect(() => {
     if (!monitorActive) {
       return
@@ -836,7 +827,7 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
   // Kural dar -- yalnizca esigi gecen bosluk, tur basina bir kez, arka
   // arkaya ayni sozcuk olmadan (bkz. thinking-filler.ts).
   //
-   
+
   // tutamac (doldurma durumu, akis oturumu), reaktif deger aynasi degil
   useEffect(() => {
     if (status !== 'thinking') {

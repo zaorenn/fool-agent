@@ -19,9 +19,7 @@ function writeFromAnotherWindow(key: string, newValue: null | string): void {
     window.localStorage.setItem(key, newValue)
   }
 
-  window.dispatchEvent(
-    new StorageEvent('storage', { key, newValue, storageArea: window.localStorage })
-  )
+  window.dispatchEvent(new StorageEvent('storage', { key, newValue, storageArea: window.localStorage }))
 }
 
 describe('pencereler arasi paylasilan atom', () => {
@@ -37,7 +35,6 @@ describe('pencereler arasi paylasilan atom', () => {
     expect($pttCode.get()).toBe('KeyQ')
   })
 
-
   it('dinleme kipi diger pencereden geliyor', async () => {
     const { $listenMode } = await import('./notch/listen-mode')
 
@@ -45,7 +42,6 @@ describe('pencereler arasi paylasilan atom', () => {
 
     expect($listenMode.get()).toBe('push-to-talk')
   })
-
 
   it('anahtar SILINDIYSE varsayilana donuyor', async () => {
     const { $pttCode } = await import('./notch/ptt-store')

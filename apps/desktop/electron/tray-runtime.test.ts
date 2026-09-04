@@ -208,7 +208,10 @@ describe('trayTooltip', () => {
     expect(trayTooltip('The Fool', null)).toBe('The Fool')
     expect(trayTooltip('The Fool', snapshotWith())).toBe('The Fool')
     expect(
-      trayTooltip('The Fool', snapshotWith({ tts: { label: 'Voice', loaded: [{ id: 'kokoro' }], selected: '', warming: false } }))
+      trayTooltip(
+        'The Fool',
+        snapshotWith({ tts: { label: 'Voice', loaded: [{ id: 'kokoro' }], selected: '', warming: false } })
+      )
     ).toBe('The Fool — 1 model loaded')
   })
 })

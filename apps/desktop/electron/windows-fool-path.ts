@@ -253,6 +253,7 @@ export function resolveVenvFoolCommand(
   } else if (basename(scriptsDir).toLowerCase() === 'bin') {
     const possibleRoot = dirname(scriptsDir)
     const possibleVenv = resolvePath(possibleRoot, 'venv')
+
     if (directoryExists(possibleVenv)) {
       venvRoot = possibleVenv
       root = possibleRoot

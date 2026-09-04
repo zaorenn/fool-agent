@@ -580,8 +580,7 @@ export function useVoiceConversation({
         // ikinci yol sessizce dışarıda kalıyor.
         const session = await startSpeechStream({
           onSentence: sentence => setSpokenSubtitle(spokenSubtitle(sentence, 0)),
-          onSentenceProgress: (sentence, ratio) =>
-            setSpokenSubtitle(spokenSubtitle(sentence, ratio)),
+          onSentenceProgress: (sentence, ratio) => setSpokenSubtitle(spokenSubtitle(sentence, ratio)),
           source: 'voice-conversation'
         })
 

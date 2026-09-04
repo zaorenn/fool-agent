@@ -39,7 +39,10 @@ describe('cumle eszamanlamasi', () => {
 
   it('ayni cumle IKI KEZ bildirilmiyor', () => {
     // Bir cumle icin birden cok ses karesi gelebiliyor.
-    const schedule = SOURCE.slice(SOURCE.indexOf('if (pendingSentence !== null)'), SOURCE.indexOf('nextStartAt = startAt'))
+    const schedule = SOURCE.slice(
+      SOURCE.indexOf('if (pendingSentence !== null)'),
+      SOURCE.indexOf('nextStartAt = startAt')
+    )
 
     expect(schedule).toContain('pendingSentence = null')
   })

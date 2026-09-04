@@ -79,10 +79,6 @@ export function subtitleTail(text: string, limit: number = SUBTITLE_TAIL_WORDS):
 }
 
 /** Duyulan kısmın, şerit boyuna kırpılmış hâli. */
-export function spokenSubtitle(
-  sentence: string,
-  ratio: number,
-  limit: number = SUBTITLE_TAIL_WORDS
-): string {
+export function spokenSubtitle(sentence: string, ratio: number, limit: number = SUBTITLE_TAIL_WORDS): string {
   return subtitleTail(subtitleUpTo(sentence, ratio), limit)
 }

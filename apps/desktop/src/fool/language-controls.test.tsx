@@ -122,10 +122,7 @@ it('CAGIRAN taraf da kararli bir kimlik veriyor', async () => {
   const fs = await import('node:fs')
   const path = await import('node:path')
 
-  const source = fs.readFileSync(
-    path.join(__dirname, '..', 'app', 'shell', 'titlebar-controls.tsx'),
-    'utf8'
-  )
+  const source = fs.readFileSync(path.join(__dirname, '..', 'app', 'shell', 'titlebar-controls.tsx'), 'utf8')
 
   expect(source).toContain('<LanguageControls onUnavailable={hideLanguageControls} />')
   expect(source).toContain('const hideLanguageControls = useCallback(')

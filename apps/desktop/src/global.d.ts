@@ -20,10 +20,7 @@ declare global {
       getConnection: (profile?: string | null) => Promise<FoolConnection>
       // Registry-scoped backend resolution: dial (connectionId, profile). An
       // empty/local connectionId delegates to the legacy getConnection path.
-      getConnectionFor?: (payload: {
-        connectionId?: null | string
-        profile?: null | string
-      }) => Promise<FoolConnection>
+      getConnectionFor?: (payload: { connectionId?: null | string; profile?: null | string }) => Promise<FoolConnection>
       // Registry-scoped fresh WS URL (same result contract as getGatewayWsUrl).
       getGatewayWsUrlFor?: (payload: {
         connectionId?: null | string
@@ -113,9 +110,7 @@ declare global {
           shortcut: null | string
         }>
         /** Kisayolu degistir. ``taken`` = istenen tus baska bir uygulamada. */
-        setShortcut: (
-          accelerator: string
-        ) => Promise<{ ok: boolean; shortcut: null | string; taken: boolean }>
+        setShortcut: (accelerator: string) => Promise<{ ok: boolean; shortcut: null | string; taken: boolean }>
         /** Ana surec global kisayoldan dinlemeyi istedi. */
         onListenRequest: (callback: (request?: { mode?: string }) => void) => () => void
         takeListenRequest: () => Promise<null | { mode?: string }>

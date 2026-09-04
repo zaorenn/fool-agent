@@ -24,12 +24,9 @@ describe('notch shortcut order', () => {
     expect(order[0]).toBe('F13')
   })
 
-  it.each([undefined, null, '', '   ', 42, {}])(
-    'secim yoksa (%o) merdiven oldugu gibi kosuyor',
-    raw => {
-      expect(shortcutOrder(raw)).toEqual([...NOTCH_SHORTCUT_CANDIDATES])
-    }
-  )
+  it.each([undefined, null, '', '   ', 42, {}])('secim yoksa (%o) merdiven oldugu gibi kosuyor', raw => {
+    expect(shortcutOrder(raw)).toEqual([...NOTCH_SHORTCUT_CANDIDATES])
+  })
 
   it('bosluklar kirpiliyor', () => {
     expect(shortcutOrder('  F13  ')[0]).toBe('F13')
@@ -38,9 +35,7 @@ describe('notch shortcut order', () => {
   it('merdiven her zaman yedek olarak kaliyor', () => {
     // Yalnizca secimi denemek, tutulmus bir tusta kisayolu TUMDEN
     // kaybetmek olurdu.
-    expect(shortcutOrder('CommandOrControl+Shift+J').length).toBe(
-      NOTCH_SHORTCUT_CANDIDATES.length + 1
-    )
+    expect(shortcutOrder('CommandOrControl+Shift+J').length).toBe(NOTCH_SHORTCUT_CANDIDATES.length + 1)
   })
 
   it('donen dizi cagirani ETKILEMIYOR', () => {

@@ -213,9 +213,7 @@ function VoiceRow({ item, job }: { item: VoiceItem; job: VoiceJob | null }) {
       {done ? (
         <Check className="size-3.5 shrink-0 text-(--theme-accent)" />
       ) : job?.state === 'running' ? (
-        <span className="shrink-0 font-mono text-[0.62rem] text-muted-foreground">
-          {job.percent.toFixed(0)}%
-        </span>
+        <span className="shrink-0 font-mono text-[0.62rem] text-muted-foreground">{job.percent.toFixed(0)}%</span>
       ) : job?.state === 'failed' ? (
         <span className="shrink-0 text-[0.62rem] text-(--theme-warm)">failed</span>
       ) : null}

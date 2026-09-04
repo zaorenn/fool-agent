@@ -358,7 +358,6 @@ export function monitorSpeechDuringPlayback(callbacks: BargeMonitorCallbacks): (
             return
           }
         }
-
       }
 
       meter.onaudioprocess = event => {

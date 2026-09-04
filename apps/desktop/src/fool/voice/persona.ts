@@ -226,8 +226,5 @@ export function speakingSummary(engine: null | VoiceItem): string {
  * durumu SÖYLEMEK ve geçişi bir tıka indirmek.
  */
 export function idleClone(items: VoiceItem[]): null | VoiceItem {
-  return (
-    items.find(item => item.kind === 'tts' && item.installed && !item.active && Boolean(item.clone)) ??
-    null
-  )
+  return items.find(item => item.kind === 'tts' && item.installed && !item.active && Boolean(item.clone)) ?? null
 }

@@ -25,10 +25,7 @@ import { describe, expect, it } from 'vitest'
 
 const NOTCH = readFileSync(join(import.meta.dirname, 'notch/use-notch-voice.ts'), 'utf8')
 
-const COMPOSER = readFileSync(
-  join(import.meta.dirname, '../app/chat/composer/hooks/use-voice-conversation.ts'),
-  'utf8'
-)
+const COMPOSER = readFileSync(join(import.meta.dirname, '../app/chat/composer/hooks/use-voice-conversation.ts'), 'utf8')
 
 describe('mikrofon acilinca isitiliyor', () => {
   it('centikte bas-konus baslangicinda', () => {
@@ -62,10 +59,7 @@ describe('yazili sohbet de isitiyor', () => {
     // Klavyeden yazan kullanicida mikrofon HIC acilmiyor: mikrofona bagli
     // isitma bu yolu kapsamiyordu ve ilk cumle soguk yuklemeyi bekliyordu
     // (olculdu: kokoro soguk 26,1 sn / sicak 0,55 sn).
-    const hook = readFileSync(
-      join(import.meta.dirname, '../app/chat/composer/hooks/use-auto-speak-replies.ts'),
-      'utf8'
-    )
+    const hook = readFileSync(join(import.meta.dirname, '../app/chat/composer/hooks/use-auto-speak-replies.ts'), 'utf8')
 
     expect(hook.includes('warmVoice()')).toBe(true)
   })

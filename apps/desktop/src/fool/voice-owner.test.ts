@@ -168,7 +168,6 @@ describe('bir cevap bir ses', () => {
 
     expect(source.includes('forgetSpokenMessage(messageId)')).toBe(true)
   })
-
 })
 
 /**

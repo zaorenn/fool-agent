@@ -64,10 +64,7 @@ describe('eslik kipi yapi bayragi', () => {
   it('yayin yolu URETILEN paketi tariyor, niyete guvenmiyor', () => {
     // Isaret dururken dalginlikla ``npm run dist`` calistirmak, eslik kipi
     // iceren bir paketi disariya gonderirdi ve bu geri alinamaz.
-    const builder = readFileSync(
-      join(__dirname, '..', '..', '..', 'scripts', 'run-electron-builder.mjs'),
-      'utf8'
-    )
+    const builder = readFileSync(join(__dirname, '..', '..', '..', 'scripts', 'run-electron-builder.mjs'), 'utf8')
 
     expect(builder).toContain('COMPANION_FINGERPRINTS')
     expect(builder).toContain('Not met yet')

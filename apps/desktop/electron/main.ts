@@ -265,12 +265,7 @@ import {
 } from './remote-liveness'
 import { missingRendererAssets } from './renderer-bundle'
 import { attachRendererConsoleCapture, formatRendererBoundaryReport } from './renderer-log'
-import {
-  chooseRuntimeRoot,
-  describeMigration,
-  RUNTIME_DIR_NAME,
-  runtimeRootAfterMigration
-} from './runtime-root'
+import { chooseRuntimeRoot, describeMigration, RUNTIME_DIR_NAME, runtimeRootAfterMigration } from './runtime-root'
 import { classifyRuntimeVersion, describeRuntimeVersion, needsRepair } from './runtime-version'
 import {
   buildSessionWindowUrl,
@@ -782,10 +777,7 @@ function acceptConfiguredHome(raw: string, source: string): string {
 
   const fallback = defaultFoolHome()
 
-  console.warn(
-    `[fool] [home] ${source} FOOL_HOME=${home} yok sayildi (${reason}); ` +
-      `veri dizini: ${fallback}`
-  )
+  console.warn(`[fool] [home] ${source} FOOL_HOME=${home} yok sayildi (${reason}); ` + `veri dizini: ${fallback}`)
 
   return fallback
 }
@@ -888,10 +880,7 @@ const RUNTIME_ROOT_NAME = (() => {
   let migrated = false
 
   try {
-    fs.renameSync(
-      path.join(FOOL_HOME, choice.migrateFrom),
-      path.join(FOOL_HOME, RUNTIME_DIR_NAME)
-    )
+    fs.renameSync(path.join(FOOL_HOME, choice.migrateFrom), path.join(FOOL_HOME, RUNTIME_DIR_NAME))
     migrated = true
   } catch (err) {
     console.warn(`[fool] [runtime] dizin tasinamadi: ${err && (err as Error).message}`)
@@ -4310,10 +4299,7 @@ function readJson(filePath) {
 //
 // Kullaniciya gorunen: zaten kurulu olan ses motorlarinin bastan indirilmeye
 // baslamasi ve kurulumun takilmasi.
-const LEGACY_BOOTSTRAP_COMPLETE_MARKER = path.join(
-  ACTIVE_HERMES_ROOT,
-  '.hermes-bootstrap-complete'
-)
+const LEGACY_BOOTSTRAP_COMPLETE_MARKER = path.join(ACTIVE_HERMES_ROOT, '.hermes-bootstrap-complete')
 
 function readBootstrapMarker() {
   // Yeni ad kazanir; eski ad yalnizca yeni yoksa okunur. Boylece bir kez
@@ -4401,7 +4387,11 @@ const RUNTIME_REPAIR_ATTEMPT_MARKER = path.join(ACTIVE_HERMES_ROOT, RUNTIME_REPA
 
 /** Damganin kimligi: onarimin denendigi ``(HEAD, pin)`` cifti. */
 function runtimeRepairKey(runtimeHead, pinnedCommit) {
-  return `${String(runtimeHead || '').trim().toLowerCase()}->${String(pinnedCommit || '').trim().toLowerCase()}`
+  return `${String(runtimeHead || '')
+    .trim()
+    .toLowerCase()}->${String(pinnedCommit || '')
+    .trim()
+    .toLowerCase()}`
 }
 
 /** Bu cift icin onarim daha once denendi ve ise yaramadi mi? */
@@ -5174,11 +5164,7 @@ async function ensureRuntime(backend) {
     //
     // Yalnizca python'i sinamak bunu kaciriyordu: masaustu calisiyor
     // (python'i dogrudan cagiriyor), kullanicinin terminali calismiyor.
-    const migratedLauncher = path.join(
-      ACTIVE_HERMES_ROOT,
-      'bin',
-      IS_WINDOWS ? 'fool.exe' : 'fool'
-    )
+    const migratedLauncher = path.join(ACTIVE_HERMES_ROOT, 'bin', IS_WINDOWS ? 'fool.exe' : 'fool')
 
     const launcherOk = !fileExists(migratedLauncher) || verifyFoolCli(migratedLauncher)
 
@@ -5189,10 +5175,7 @@ async function ensureRuntime(backend) {
       runtimeVersionRepairAttempted = true
       bootstrapRepairRequested = true
 
-      rememberLog(
-        '[runtime] calisma zamani dogrulanamadi (venv ya da fool komutu kirik); ' +
-          'yeniden kuruluyor'
-      )
+      rememberLog('[runtime] calisma zamani dogrulanamadi (venv ya da fool komutu kirik); ' + 'yeniden kuruluyor')
 
       updateBootProgress({
         phase: 'runtime.repair',
@@ -8397,9 +8380,7 @@ async function discoverCloudAgents(org?: string) {
       // A 401 means the portal session lapsed (and silent renewal could not
       // recover it) — surface it as a re-login, not a generic failure.
       if (error && error.statusCode === 401) {
-        const err = new Error(
-          'Your Fool Cloud session has expired. Open Settings → Gateway and sign in again.'
-        ) as any
+        const err = new Error('Your Fool Cloud session has expired. Open Settings → Gateway and sign in again.') as any
 
         err.needsCloudLogin = true
         err.cause = error
@@ -11157,10 +11138,7 @@ async function startFool() {
     await advanceBootProgress('backend.port', 'Waiting for The Fool backend to launch', 86)
 
     // Discover the ephemeral port the child bound to
-    const port = await Promise.race([
-      waitForDashboardPortAnnouncement(foolProcess, { readyFile }),
-      backendStartFailed
-    ])
+    const port = await Promise.race([waitForDashboardPortAnnouncement(foolProcess, { readyFile }), backendStartFailed])
 
     if (readyFile) {
       fs.unlink(readyFile, () => {})
@@ -12632,10 +12610,7 @@ function hideMainWindowToTray() {
   }
 
   trayHideNoticeShown = true
-  trayRuntime.notify(
-    'The Fool is still running',
-    'Right-click the tray icon to unload models or quit.'
-  )
+  trayRuntime.notify('The Fool is still running', 'Right-click the tray icon to unload models or quit.')
 }
 
 /**
@@ -13011,10 +12986,7 @@ ipcMain.handle('fool:window:openInTerminal', async (_event, sessionId, opts) => 
     const scriptDir = path.join(app.getPath('userData'), 'open-in-terminal')
     fs.mkdirSync(scriptDir, { recursive: true })
 
-    const scriptPath = path.join(
-      scriptDir,
-      `fool-${crypto.randomBytes(6).toString('hex')}${terminalScriptExtension()}`
-    )
+    const scriptPath = path.join(scriptDir, `fool-${crypto.randomBytes(6).toString('hex')}${terminalScriptExtension()}`)
 
     fs.writeFileSync(
       scriptPath,
@@ -13561,11 +13533,7 @@ function storedNotchShortcut() {
 function writeNotchShortcut(accelerator) {
   try {
     fs.mkdirSync(path.dirname(NOTCH_SHORTCUT_CONFIG_PATH), { recursive: true })
-    fs.writeFileSync(
-      NOTCH_SHORTCUT_CONFIG_PATH,
-      JSON.stringify({ accelerator }, null, 2),
-      'utf8'
-    )
+    fs.writeFileSync(NOTCH_SHORTCUT_CONFIG_PATH, JSON.stringify({ accelerator }, null, 2), 'utf8')
   } catch (error) {
     rememberLog(`[notch] shortcut write failed: ${error.message}`)
   }
@@ -14339,7 +14307,7 @@ ipcMain.handle('fool:connection-config:apply', async (_event, payload) => {
 const SHARED_WINDOW_VALUES = new Map()
 
 ipcMain.handle('fool:shared:get', async (_event, key) =>
-  typeof key === 'string' ? SHARED_WINDOW_VALUES.get(key) ?? '' : ''
+  typeof key === 'string' ? (SHARED_WINDOW_VALUES.get(key) ?? '') : ''
 )
 
 ipcMain.handle('fool:shared:set', async (event, payload) => {
@@ -14744,12 +14712,11 @@ const claimedAmbientCue = createEventDeduper()
 
 // A window asks "do I own this ambient cue (turn-end sound / spoken reply)?".
 // The first caller within the window gets true; peers get false and stay quiet.
-ipcMain.handle('fool:ambient:claim', (_event, key, ttlMs) =>
-  !claimedAmbientCue(
-    String(key ?? ''),
-    Date.now(),
-    typeof ttlMs === 'number' && ttlMs > 0 ? ttlMs : undefined
-  ))
+ipcMain.handle(
+  'fool:ambient:claim',
+  (_event, key, ttlMs) =>
+    !claimedAmbientCue(String(key ?? ''), Date.now(), typeof ttlMs === 'number' && ttlMs > 0 ? ttlMs : undefined)
+)
 
 ipcMain.handle('fool:notify', (_event, payload) => {
   if (!Notification.isSupported()) {

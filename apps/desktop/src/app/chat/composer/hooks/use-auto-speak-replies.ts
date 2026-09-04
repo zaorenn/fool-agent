@@ -291,8 +291,7 @@ export function useAutoSpeakReplies({
             return startSpeechStream({
               messageId: id,
               onSentence: sentence => setSpokenSubtitle(spokenSubtitle(sentence, 0)),
-              onSentenceProgress: (sentence, ratio) =>
-                setSpokenSubtitle(spokenSubtitle(sentence, ratio)),
+              onSentenceProgress: (sentence, ratio) => setSpokenSubtitle(spokenSubtitle(sentence, ratio)),
               source: 'read-aloud'
             })
           })

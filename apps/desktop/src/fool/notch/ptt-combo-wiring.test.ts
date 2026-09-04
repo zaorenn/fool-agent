@@ -17,12 +17,7 @@ import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import {
-  captureKeyDown,
-  createBindingCapture,
-  formatPttBinding,
-  parsePttBinding
-} from './ptt-binding'
+import { captureKeyDown, createBindingCapture, formatPttBinding, parsePttBinding } from './ptt-binding'
 import { createPushToTalkState, MIN_HOLD_MS, onKeyDown, onKeyUp } from './push-to-talk'
 
 describe('yakalama -- ayarlardaki "Rebind"', () => {
@@ -75,9 +70,9 @@ describe('durum makinesi komboyu goruyor', () => {
   it('kombo eslesince kayit basliyor', () => {
     const state = createPushToTalkState()
 
-    expect(
-      onKeyDown(state, { code: 'ControlRight', ctrlKey: true, shiftKey: true }, 0, HELD)
-    ).toEqual({ type: 'start' })
+    expect(onKeyDown(state, { code: 'ControlRight', ctrlKey: true, shiftKey: true }, 0, HELD)).toEqual({
+      type: 'start'
+    })
   })
 
   it('SHIFT ONCE birakilsa bile kayit KAPANIYOR', () => {

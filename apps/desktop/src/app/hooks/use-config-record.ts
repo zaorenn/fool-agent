@@ -39,8 +39,7 @@ export const useFoolConfigRecord = (profile?: null | string) =>
 // write the suffixed per-profile cache instead — keeps the selector's optimistic
 // write-through landing on the same key its query reads.
 export const setFoolConfigCache = writeCache<FoolConfigRecord>(FOOL_CONFIG_KEY)
-export const foolConfigCacheWriter = (profile?: null | string) =>
-  writeCache<FoolConfigRecord>(foolConfigKey(profile))
+export const foolConfigCacheWriter = (profile?: null | string) => writeCache<FoolConfigRecord>(foolConfigKey(profile))
 
 export const invalidateFoolConfig = (profile?: null | string) =>
   queryClient.invalidateQueries({ queryKey: foolConfigKey(profile) })

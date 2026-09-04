@@ -28,21 +28,15 @@ export type ListenMode = 'hands-free' | 'push-to-talk'
  */
 export const DEFAULT_LISTEN_MODE: ListenMode = 'hands-free'
 
-const isListenMode = (value: unknown): value is ListenMode =>
-  value === 'hands-free' || value === 'push-to-talk'
+const isListenMode = (value: unknown): value is ListenMode => value === 'hands-free' || value === 'push-to-talk'
 
 /** Tanınmayan her şey varsayılana düşüyor. */
-export const sanitizeListenMode = (raw: unknown): ListenMode =>
-  isListenMode(raw) ? raw : DEFAULT_LISTEN_MODE
+export const sanitizeListenMode = (raw: unknown): ListenMode => (isListenMode(raw) ? raw : DEFAULT_LISTEN_MODE)
 
-export const $listenMode = sharedAtom<ListenMode>(
-  'fool.desktop.voice.listen-mode',
-  DEFAULT_LISTEN_MODE,
-  {
-    decode: raw => sanitizeListenMode(raw),
-    encode: value => sanitizeListenMode(value)
-  }
-)
+export const $listenMode = sharedAtom<ListenMode>('fool.desktop.voice.listen-mode', DEFAULT_LISTEN_MODE, {
+  decode: raw => sanitizeListenMode(raw),
+  encode: value => sanitizeListenMode(value)
+})
 
 /** Kipi çevir -- notch'taki küçük düğme bunu çağırıyor. */
 export function toggleListenMode(): ListenMode {

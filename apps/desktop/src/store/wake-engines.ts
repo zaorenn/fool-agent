@@ -91,10 +91,7 @@ const WAKE_INSTALL_TIMEOUT_MS = 180_000
 
 export type WakeRequester = <T>(method: string, params?: Record<string, unknown>) => Promise<T>
 
-const gatewayRequester: WakeRequester = async <T,>(
-  method: string,
-  params: Record<string, unknown> = {}
-) => {
+const gatewayRequester: WakeRequester = async <T>(method: string, params: Record<string, unknown> = {}) => {
   const gateway = $gateway.get()
 
   if (!gateway) {
@@ -113,16 +110,12 @@ const patch = (next: Partial<WakeEnginesState>): void => {
   $wakeEngines.set({ ...$wakeEngines.get(), ...next })
 }
 
-const messageOf = (error: unknown): string =>
-  error instanceof Error ? error.message : String(error)
+const messageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error))
 
 /** Katalogu ağ geçidinden tazele. */
 export async function loadWakeEngines(request: WakeRequester = gatewayRequester): Promise<void> {
   try {
-    const result = await request<{ effective_phrase?: string; engines?: WakeEngine[] }>(
-      'wake.engines',
-      {}
-    )
+    const result = await request<{ effective_phrase?: string; engines?: WakeEngine[] }>('wake.engines', {})
 
     patch({
       effectivePhrase: result?.effective_phrase?.trim() ?? '',
@@ -145,10 +138,7 @@ export async function loadWakeEngines(request: WakeRequester = gatewayRequester)
  * sessizce çalışmayan bir uyandırmaya götürürdü. Ağ geçidinde de aynı kapı
  * var -- arayüz kapısına güvenilmiyor.
  */
-export async function setWakeEngine(
-  engineId: string,
-  request: WakeRequester = gatewayRequester
-): Promise<void> {
+export async function setWakeEngine(engineId: string, request: WakeRequester = gatewayRequester): Promise<void> {
   const result = await request<{ effective_phrase?: string }>('wake.engine', { engine: engineId })
 
   patch({ effectivePhrase: result?.effective_phrase?.trim() ?? '' })
@@ -162,10 +152,7 @@ export async function setWakeEngine(
 }
 
 /** ``openwakeword``ün hazır ifadelerinden birini seç. */
-export async function setWakeModel(
-  model: string,
-  request: WakeRequester = gatewayRequester
-): Promise<void> {
+export async function setWakeModel(model: string, request: WakeRequester = gatewayRequester): Promise<void> {
   const result = await request<{ effective_phrase?: string }>('wake.model', { model })
 
   patch({ effectivePhrase: result?.effective_phrase?.trim() ?? '' })

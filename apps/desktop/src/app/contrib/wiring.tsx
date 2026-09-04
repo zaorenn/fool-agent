@@ -502,7 +502,6 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   // isteyen taraf centik.
   useVoiceSessionRequests(createBackendSessionForSend)
 
-
   // Swapping the live gateway to another profile must re-pull that profile's
   // global model + active-profile pill (both are nanostores — the blanket
   // invalidateQueries on swap doesn't touch them).

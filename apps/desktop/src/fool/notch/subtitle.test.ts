@@ -108,9 +108,7 @@ describe('dikisler', () => {
   it('HER konusan yol seridi yayinliyor', () => {
     // Sizinti yapisal: kural tek yerde uygulaninca ikinci yol sessizce
     // disarida kaliyor ve o yol konustugunda centikte hicbir sey gorunmuyor.
-    const conversation = read(
-      '..', '..', 'app', 'chat', 'composer', 'hooks', 'use-voice-conversation.ts'
-    )
+    const conversation = read('..', '..', 'app', 'chat', 'composer', 'hooks', 'use-voice-conversation.ts')
 
     expect(conversation).toContain('setSpokenSubtitle(spokenSubtitle(sentence, ratio))')
     expect(COMPOSER).toContain('setSpokenSubtitle(spokenSubtitle(sentence, ratio))')

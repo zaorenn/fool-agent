@@ -78,11 +78,11 @@ export function formatPttCode(code: string): string {
   }
 
   // ``KeyQ`` -> ``Q``, ``Digit7`` -> ``7``, ``F13`` -> ``F13``.
-  const stripped = /^Key(?<letter>[A-Z])$/.exec(code)?.groups?.letter ?? /^Digit(?<digit>[0-9])$/.exec(code)?.groups?.digit
+  const stripped =
+    /^Key(?<letter>[A-Z])$/.exec(code)?.groups?.letter ?? /^Digit(?<digit>[0-9])$/.exec(code)?.groups?.digit
 
   return stripped ?? code
 }
-
 
 // ---------------------------------------------------------------------------
 // Değiştiricili bağlamalar — ``Shift+ControlRight`` gibi
@@ -180,13 +180,16 @@ export function formatPttBinding(binding: PttBinding): string {
  * ``ctrlKey``i zaten true yapıyor. Kendi değiştiricisini "fazladan basılmış"
  * saymak, bağlamayı hiç eşleşmez hâle getirirdi -- ölçülen hata buydu.
  */
-export function bindingMatches(binding: PttBinding, event: {
-  code?: string
-  altKey?: boolean
-  ctrlKey?: boolean
-  metaKey?: boolean
-  shiftKey?: boolean
-}): boolean {
+export function bindingMatches(
+  binding: PttBinding,
+  event: {
+    code?: string
+    altKey?: boolean
+    ctrlKey?: boolean
+    metaKey?: boolean
+    shiftKey?: boolean
+  }
+): boolean {
   if (event.code !== binding.code) {
     return false
   }
@@ -210,7 +213,6 @@ export function formatPttBindingLabel(binding: PttBinding): string {
 
   return [...mods, formatPttCode(binding.code)].join(' + ')
 }
-
 
 // ---------------------------------------------------------------------------
 // Yakalama — ayarlar panelindeki "Rebind"
@@ -287,7 +289,6 @@ export function captureKeyDown(event: {
 
   return { binding, complete: !(self !== null && bare) }
 }
-
 
 /**
  * Yakalama SIRASI — saf, DOM'suz, sınanabilir.

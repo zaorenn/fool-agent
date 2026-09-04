@@ -67,9 +67,13 @@ describe('kare hizindan bagimsizlik', () => {
     const fast = createOrbState()
     const slow = createOrbState()
 
-    for (let i = 0; i < 60; i += 1) {advance(fast, 1, 16.67)}
+    for (let i = 0; i < 60; i += 1) {
+      advance(fast, 1, 16.67)
+    }
 
-    for (let i = 0; i < 30; i += 1) {advance(slow, 1, 33.33)}
+    for (let i = 0; i < 30; i += 1) {
+      advance(slow, 1, 33.33)
+    }
 
     expect(Math.abs(fast.level - slow.level)).toBeLessThan(0.02)
   })
@@ -78,9 +82,13 @@ describe('kare hizindan bagimsizlik', () => {
     const fast = createOrbState()
     const slow = createOrbState()
 
-    for (let i = 0; i < 60; i += 1) {advance(fast, 0, 16.67)}
+    for (let i = 0; i < 60; i += 1) {
+      advance(fast, 0, 16.67)
+    }
 
-    for (let i = 0; i < 30; i += 1) {advance(slow, 0, 33.33)}
+    for (let i = 0; i < 30; i += 1) {
+      advance(slow, 0, 33.33)
+    }
 
     expect(Math.abs(fast.phase - slow.phase)).toBeLessThan(0.02)
   })
@@ -154,9 +162,7 @@ describe('halkalar', () => {
   it('dis halkalar daha sonuk', () => {
     const state = run(0.8, 500)
 
-    expect(ringOpacity(state, 'listening', 0)).toBeGreaterThan(
-      ringOpacity(state, 'listening', 2)
-    )
+    expect(ringOpacity(state, 'listening', 0)).toBeGreaterThan(ringOpacity(state, 'listening', 2))
   })
 
   it('opaklik 0..1 disina cikmiyor', () => {

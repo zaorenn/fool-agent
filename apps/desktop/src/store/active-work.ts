@@ -107,7 +107,6 @@ if (typeof window !== 'undefined') {
 
   whenMainWindow(() =>
     $activeWork.subscribe(work => {
-
       const next = JSON.stringify(work)
 
       if (next === lastSent) {

@@ -56,7 +56,7 @@ test('KALICILASMIS deger kapidan geciyor, ortam degiskeni GECMIYOR', () => {
   // düştü. Sınav artık hiçbir şey sınamıyordu.
   //
   // Bir sürecin o an verdiği değişken bu launch'a özel, bilinçli bir seçim.
-  assert.ok(!MAIN.includes("acceptConfiguredHome(process.env.FOOL_HOME"))
+  assert.ok(!MAIN.includes('acceptConfiguredHome(process.env.FOOL_HOME'))
   assert.ok(MAIN.includes('ORTAM DEGISKENI dogrulanmiyor'))
 })
 
@@ -71,10 +71,7 @@ test('reddetme SESSIZ degil', () => {
 test('GECERLI bir ev hala kabul ediliyor', () => {
   // Kapı fazla hevesli olsaydı, gerçekten FOOL_HOME ayarlamış bir kullanıcının
   // yapılandırması yok sayılırdı -- aynı hatanın aynası.
-  const gate = MAIN.slice(
-    MAIN.indexOf('function acceptConfiguredHome'),
-    MAIN.indexOf('function resolveFoolHome')
-  )
+  const gate = MAIN.slice(MAIN.indexOf('function acceptConfiguredHome'), MAIN.indexOf('function resolveFoolHome'))
 
   assert.ok(gate.includes('if (reason === null)'))
   assert.ok(gate.includes('return home'))

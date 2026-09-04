@@ -28,28 +28,27 @@ const done = { id: 'a1', pending: false, text: 'Bir varmis bir yokmus. Son.' }
 describe('akis baslatma', () => {
   it('cevap HALA AKARKEN oturum aciliyor', () => {
     // Hatanin ta kendisi: eskiden burada ``wait`` donuyordu.
-    expect(
-      planReplySpeech({ declined: false, live: null, playbackIdle: true, reply: streaming })
-    ).toEqual({ id: 'a1', kind: 'open' })
+    expect(planReplySpeech({ declined: false, live: null, playbackIdle: true, reply: streaming })).toEqual({
+      id: 'a1',
+      kind: 'open'
+    })
   })
 
   it('onceki klip CALARKEN yeni oturum acilmiyor', () => {
     // Iki cevabin ust uste binmesini onleyen eski kural KORUNUYOR.
-    expect(
-      planReplySpeech({ declined: false, live: null, playbackIdle: false, reply: streaming })
-    ).toEqual({ kind: 'wait' })
+    expect(planReplySpeech({ declined: false, live: null, playbackIdle: false, reply: streaming })).toEqual({
+      kind: 'wait'
+    })
   })
 
   it('baska pencere ustlendiyse acilmiyor', () => {
-    expect(
-      planReplySpeech({ declined: true, live: null, playbackIdle: true, reply: streaming })
-    ).toEqual({ kind: 'wait' })
+    expect(planReplySpeech({ declined: true, live: null, playbackIdle: true, reply: streaming })).toEqual({
+      kind: 'wait'
+    })
   })
 
   it('cevap yoksa ve oturum da yoksa bekliyor', () => {
-    expect(
-      planReplySpeech({ declined: false, live: null, playbackIdle: true, reply: null })
-    ).toEqual({ kind: 'wait' })
+    expect(planReplySpeech({ declined: false, live: null, playbackIdle: true, reply: null })).toEqual({ kind: 'wait' })
   })
 })
 
@@ -128,9 +127,9 @@ describe('kapatma', () => {
 
   it('cevap kaybolursa acik oturum kapaniyor', () => {
     // Oturum degisti ya da mesaj silindi.
-    expect(
-      planReplySpeech({ declined: false, live: { id: 'a1', sent: 5 }, playbackIdle: true, reply: null })
-    ).toEqual({ kind: 'retire' })
+    expect(planReplySpeech({ declined: false, live: { id: 'a1', sent: 5 }, playbackIdle: true, reply: null })).toEqual({
+      kind: 'retire'
+    })
   })
 })
 
@@ -139,10 +138,7 @@ describe('kanca saf planlayiciyi kullaniyor', () => {
     const { readFileSync } = await import('node:fs')
     const { join } = await import('node:path')
 
-    const hook = readFileSync(
-      join(import.meta.dirname, '../app/chat/composer/hooks/use-auto-speak-replies.ts'),
-      'utf8'
-    )
+    const hook = readFileSync(join(import.meta.dirname, '../app/chat/composer/hooks/use-auto-speak-replies.ts'), 'utf8')
 
     expect(hook.includes('planReplySpeech')).toBe(true)
     expect(hook.includes('startSpeechStream')).toBe(true)
@@ -192,10 +188,7 @@ describe('oynatma kapisi yalnizca ACILISTA', () => {
     const { readFileSync } = await import('node:fs')
     const { join } = await import('node:path')
 
-    const hook = readFileSync(
-      join(import.meta.dirname, '../app/chat/composer/hooks/use-auto-speak-replies.ts'),
-      'utf8'
-    )
+    const hook = readFileSync(join(import.meta.dirname, '../app/chat/composer/hooks/use-auto-speak-replies.ts'), 'utf8')
 
     // Eski satir: her tiki en bastan kesiyordu.
     expect(hook.includes("conversationActive || $voicePlayback.get().status !== 'idle'")).toBe(false)

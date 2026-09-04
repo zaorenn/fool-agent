@@ -123,13 +123,11 @@ export function describeRuntimeVersion(
   runtimeCommit: unknown,
   appPinnedCommit: unknown
 ): string {
-  const short = (value: unknown) =>
-    isUsableCommit(value) ? value.trim().slice(0, 12) : 'bilinmiyor'
+  const short = (value: unknown) => (isUsableCommit(value) ? value.trim().slice(0, 12) : 'bilinmiyor')
 
   if (state === 'stale') {
     return (
-      `runtime ${short(runtimeCommit)} uygulamanin surumunden (${short(appPinnedCommit)}) ` +
-      'FARKLI -- onariliyor'
+      `runtime ${short(runtimeCommit)} uygulamanin surumunden (${short(appPinnedCommit)}) ` + 'FARKLI -- onariliyor'
     )
   }
 

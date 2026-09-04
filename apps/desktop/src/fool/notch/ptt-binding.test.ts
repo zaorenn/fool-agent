@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  DEFAULT_PTT_CODE,
-  formatPttCode,
-  isBindableCode,
-  sanitizePttCode
-} from './ptt-binding'
+import { DEFAULT_PTT_CODE, formatPttCode, isBindableCode, sanitizePttCode } from './ptt-binding'
 
 describe('baglanabilir tus', () => {
   it('varsayilan sag Ctrl', () => {

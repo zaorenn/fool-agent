@@ -95,8 +95,5 @@ export function describeMigration(choice: RuntimeRootChoice, migrated: boolean):
     return `runtime dizini ${choice.migrateFrom} -> ${RUNTIME_DIR_NAME} olarak tasindi`
   }
 
-  return (
-    `runtime dizini ${choice.migrateFrom} adinda birakildi (tasima basarisiz); ` +
-    'calismaya devam ediliyor'
-  )
+  return `runtime dizini ${choice.migrateFrom} adinda birakildi (tasima basarisiz); ` + 'calismaya devam ediliyor'
 }

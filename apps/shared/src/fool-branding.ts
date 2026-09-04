@@ -202,7 +202,7 @@ function brandTextPreserving(input: string, args: readonly unknown[]): string {
 }
 
 function brandValue(value: unknown): unknown {
-  if (typeof value === 'string') return brandText(value)
+  if (typeof value === 'string') {return brandText(value)}
 
   if (typeof value === 'function') {
     const fn = value as (...args: unknown[]) => unknown
@@ -226,13 +226,15 @@ function brandValue(value: unknown): unknown {
     }
   }
 
-  if (Array.isArray(value)) return value.map(brandValue)
+  if (Array.isArray(value)) {return value.map(brandValue)}
 
   if (value !== null && typeof value === 'object') {
     const out: Record<string, unknown> = {}
+
     for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
       out[key] = brandValue(val)
     }
+
     return out
   }
 

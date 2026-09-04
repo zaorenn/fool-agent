@@ -80,7 +80,15 @@ describe('RelationshipBar', () => {
   })
 
   it('ilk karsilasmada DURUS iddia etmiyor', async () => {
-    api.mockResolvedValue({ enabled: true, started: false, warmth: 50, stance: 'neutral', label: 'Neutral', summary: 'x', grievances: [] })
+    api.mockResolvedValue({
+      enabled: true,
+      started: false,
+      warmth: 50,
+      stance: 'neutral',
+      label: 'Neutral',
+      summary: 'x',
+      grievances: []
+    })
 
     render(<RelationshipBar />)
 

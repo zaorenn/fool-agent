@@ -86,10 +86,7 @@ test('normalizeRemoteHeaders keeps safe proxy headers and drops transport/auth h
 
 test('remoteRequestMatchesBaseUrl treats HTTPS and WSS as the same gateway origin', () => {
   assert.equal(
-    remoteRequestMatchesBaseUrl(
-      'wss://fool.example.com/gateway/api/ws?ticket=abc',
-      'https://fool.example.com/gateway'
-    ),
+    remoteRequestMatchesBaseUrl('wss://fool.example.com/gateway/api/ws?ticket=abc', 'https://fool.example.com/gateway'),
     true
   )
   assert.equal(remoteRequestMatchesBaseUrl('ws://fool.example.com/api/ws', 'http://fool.example.com'), true)

@@ -100,8 +100,6 @@ export function modeOfSession(storedSessionId: null | string): ChatMode {
   return found ? modeOfSource(found.source) : $newChatMode.get()
 }
 
-
-
 /**
  * Şu an geçerli kip: açık sohbetin kipi, sohbet yoksa YENİ sohbet tercihi.
  *
@@ -163,7 +161,9 @@ export async function setSessionMode(storedSessionId: string, mode: ChatMode): P
 
   const write = (value: null | string) =>
     setSessions(sessions =>
-      sessions.map(session => (sessionMatchesStoredId(session, storedSessionId) ? { ...session, source: value } : session))
+      sessions.map(session =>
+        sessionMatchesStoredId(session, storedSessionId) ? { ...session, source: value } : session
+      )
     )
 
   write(source)

@@ -118,15 +118,18 @@ beforeEach(() => {
   speakText.mockResolvedValue({ data_url: 'data:audio/wav;base64,AA' })
   vi.stubGlobal('WebSocket', FakeSocket)
   vi.stubGlobal('Audio', FakeAudio)
-  vi.stubGlobal('AudioContext', class {
-    state = 'running'
-    currentTime = 0
-    destination = {}
-    close = async () => undefined
-    resume = async () => undefined
-    createBuffer = () => ({ duration: 0, getChannelData: () => new Float32Array(0) })
-    createBufferSource = () => ({ buffer: null, connect: () => undefined, start: () => undefined })
-  })
+  vi.stubGlobal(
+    'AudioContext',
+    class {
+      state = 'running'
+      currentTime = 0
+      destination = {}
+      close = async () => undefined
+      resume = async () => undefined
+      createBuffer = () => ({ duration: 0, getChannelData: () => new Float32Array(0) })
+      createBufferSource = () => ({ buffer: null, connect: () => undefined, start: () => undefined })
+    }
+  )
 })
 
 afterEach(() => {

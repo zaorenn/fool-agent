@@ -1,24 +1,15 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  $listenMode,
-  DEFAULT_LISTEN_MODE,
-  listenModeHint,
-  sanitizeListenMode,
-  toggleListenMode
-} from './listen-mode'
+import { $listenMode, DEFAULT_LISTEN_MODE, listenModeHint, sanitizeListenMode, toggleListenMode } from './listen-mode'
 
 describe('listen mode', () => {
   it('varsayilan ELLER SERBEST -- sesli arayuzun amaci bu', () => {
     expect(DEFAULT_LISTEN_MODE).toBe('hands-free')
   })
 
-  it.each([undefined, null, '', 'HANDS-FREE', 'ptt', 7, {}])(
-    'taninmayan girdi (%o) varsayilana dusuyor',
-    raw => {
-      expect(sanitizeListenMode(raw)).toBe('hands-free')
-    }
-  )
+  it.each([undefined, null, '', 'HANDS-FREE', 'ptt', 7, {}])('taninmayan girdi (%o) varsayilana dusuyor', raw => {
+    expect(sanitizeListenMode(raw)).toBe('hands-free')
+  })
 
   it('gecerli kipler AYNEN korunuyor', () => {
     expect(sanitizeListenMode('push-to-talk')).toBe('push-to-talk')
@@ -64,10 +55,9 @@ describe('notch secilen dinleme kipine uyuyor', () => {
       .filter(line => !line.trimStart().startsWith('//'))
       .join('\n')
 
-    expect(
-      /mode:\s*'hands-free'/.test(code),
-      "notch kipi sabit yaziyor -- kullanicinin secimi yok sayiliyor"
-    ).toBe(false)
+    expect(/mode:\s*'hands-free'/.test(code), 'notch kipi sabit yaziyor -- kullanicinin secimi yok sayiliyor').toBe(
+      false
+    )
     expect(code.includes('mode: rearmListenMode')).toBe(true)
   })
 

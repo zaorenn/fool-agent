@@ -180,7 +180,7 @@ function espeakDataEnv(
 
   // ASCII ise oldugu gibi: kisa adlar okunaksiz ve sorunu olmayan makinede
   // bu bedeli odemek gereksiz.
-   
+
   if (isAsciiPath(data)) {
     return { ESPEAK_DATA_PATH: data }
   }
@@ -190,20 +190,23 @@ function espeakDataEnv(
   // Kisa ad uretimi birimde kapali olabilir; o zaman elimizde daha iyisi yok.
   // Yanlis bir yol vermek yerine hic vermiyoruz -- Python tarafindaki kapi
   // o durumu yakalayip Piper'i hic yuklemiyor.
-   
+
   return short && isAsciiPath(short) ? { ESPEAK_DATA_PATH: short } : {}
 }
 
 /** Windows 8.3 kisa yolu; alinamazsa ``null``. */
 function shortPathSync(target) {
   try {
-    const out = execFileSync(
-      'cmd.exe',
-      ['/d', '/c', 'for %I in ("' + target + '") do @echo %~sI'],
-      { encoding: 'utf8', windowsHide: true, timeout: 5000 }
-    )
+    const out = execFileSync('cmd.exe', ['/d', '/c', 'for %I in ("' + target + '") do @echo %~sI'], {
+      encoding: 'utf8',
+      windowsHide: true,
+      timeout: 5000
+    })
 
-    const line = String(out || '').trim().split('\n').pop()
+    const line = String(out || '')
+      .trim()
+      .split('\n')
+      .pop()
 
     return line || null
   } catch {
@@ -242,9 +245,7 @@ function buildDesktopBackendEnv({
       pathModule
     }),
     // Kullanicinin acikca ayarladigi deger EZILMIYOR.
-    ...(currentEnv?.ESPEAK_DATA_PATH
-      ? {}
-      : espeakDataEnv(venvRoot, { platform, pathModule, fs: fsImpl, shortPath }))
+    ...(currentEnv?.ESPEAK_DATA_PATH ? {} : espeakDataEnv(venvRoot, { platform, pathModule, fs: fsImpl, shortPath }))
   }
 }
 

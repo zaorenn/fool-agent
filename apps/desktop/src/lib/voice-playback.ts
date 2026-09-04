@@ -431,8 +431,7 @@ function openSpeechStream(wsUrl: string, options: VoicePlaybackOptions): SpeechS
 
       const span = active.endsAt - active.startAt
 
-      const ratio =
-        span > 0 ? (context.currentTime - active.startAt) / span : 1
+      const ratio = span > 0 ? (context.currentTime - active.startAt) / span : 1
 
       options.onSentenceProgress?.(active.text, Math.min(Math.max(ratio, 0), 1))
 

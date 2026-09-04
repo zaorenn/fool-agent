@@ -15,14 +15,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import { $selectedStoredSessionId, $sessions } from '@/store/session'
 
-import {
-  $chatSimpleSidebar,
-  $newChatMode,
-  CHAT_SOURCE,
-  COWORK_SOURCE,
-  modeOfSession,
-  modeOfSource
-} from './chat-mode'
+import { $chatSimpleSidebar, $newChatMode, CHAT_SOURCE, COWORK_SOURCE, modeOfSession, modeOfSource } from './chat-mode'
 
 const session = (id: string, source: null | string) =>
   ({ id, source, title: id }) as unknown as (typeof $sessions.value)[number]

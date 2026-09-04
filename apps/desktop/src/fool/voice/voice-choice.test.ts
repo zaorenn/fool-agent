@@ -87,9 +87,7 @@ describe('isChoosableVoiceId', () => {
 
 describe('selectedVoiceId', () => {
   it('sunucuda AKTIF olani gosteriyor', () => {
-    const id = selectedVoiceId(
-      catalog([item({ id: 'kokoro' }), item({ active: true, id: 'styletts2' })])
-    )
+    const id = selectedVoiceId(catalog([item({ id: 'kokoro' }), item({ active: true, id: 'styletts2' })]))
 
     expect(id).toBe('styletts2')
   })

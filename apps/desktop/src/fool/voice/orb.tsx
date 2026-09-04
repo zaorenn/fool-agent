@@ -23,14 +23,7 @@
 
 import { useEffect, useRef } from 'react'
 
-import {
-  advance,
-  createOrbState,
-  isHearing,
-  type OrbPhase,
-  ringOpacity,
-  scaleFor
-} from './orb-motion'
+import { advance, createOrbState, isHearing, type OrbPhase, ringOpacity, scaleFor } from './orb-motion'
 
 /** Çevredeki çentik sayısı. 48 = 7,5 derecede bir; sayılamayacak kadar sık,
  *  düzensiz görünmeyecek kadar seyrek. */

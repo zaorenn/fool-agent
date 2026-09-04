@@ -299,9 +299,7 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
           kendini gizliyor -- bos bir acilir liste, olmayan bir ayari VARMIS
           gibi gosterirdi.
         */}
-        {languageControlsAvailable && (
-          <LanguageControls onUnavailable={hideLanguageControls} />
-        )}
+        {languageControlsAvailable && <LanguageControls onUnavailable={hideLanguageControls} />}
 
         {visibleSystemTools.map(tool => (
           <TitlebarToolButton key={tool.id} navigate={navigate} tool={tool} />

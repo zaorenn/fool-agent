@@ -711,8 +711,7 @@ export const en: Translations = {
       profileConnection: profile =>
         `Connection used only when “${profile}” is the active profile. Choose Use default gateway to remove its override.`,
       envOverrideTitle: 'Environment variables are controlling this desktop session.',
-      envOverrideDesc:
-        'Unset FOOL_DESKTOP_REMOTE_URL and FOOL_DESKTOP_REMOTE_TOKEN to use the saved setting below.',
+      envOverrideDesc: 'Unset FOOL_DESKTOP_REMOTE_URL and FOOL_DESKTOP_REMOTE_TOKEN to use the saved setting below.',
       modeTitle: 'Connection mode',
       localTitle: 'Local gateway',
       localDesc: 'Start a private Fool backend on localhost. This is the default and works offline.',
@@ -2403,7 +2402,8 @@ export const en: Translations = {
     maybeLater: 'Maybe later',
     moreChanges: count => `+ ${count} more change${count === 1 ? '' : 's'} included.`,
     manualTitle: 'Update from your terminal',
-    manualBody: 'You installed The Fool from the command line, so updates run there too. Paste this into your terminal:',
+    manualBody:
+      'You installed The Fool from the command line, so updates run there too. Paste this into your terminal:',
     manualPickedUp: 'The Fool will pick up the new version next time you launch it.',
     guiSkewTitle: 'Update the desktop app',
     guiSkewBody:
@@ -2469,7 +2469,8 @@ export const en: Translations = {
     installLocalDesc: 'Download The Fool, create its Python environment, and run the backend on this computer.',
     localStartUnavailable: 'Local installation could not start. Restart The Fool Desktop and try again.',
     remoteSetupTitle: 'Connect to existing The Fool',
-    remoteSetupDesc: 'Enter your gateway URL. The Fool Desktop will detect whether it needs a token or browser sign-in.',
+    remoteSetupDesc:
+      'Enter your gateway URL. The Fool Desktop will detect whether it needs a token or browser sign-in.',
     remoteUrlTitle: 'Gateway URL',
     remoteUrlDesc: 'Use the base URL of the Fool gateway, including https:// when remote.',
     remoteUrlPlaceholder: 'https://gateway.example.com/fool',
@@ -2545,7 +2546,8 @@ export const en: Translations = {
       xai: { short: 'Grok models', description: 'Direct access to xAI Grok models.' },
       local: {
         short: 'self-hosted',
-        description: 'Point The Fool at a local or self-hosted OpenAI-compatible endpoint (vLLM, llama.cpp, Ollama, etc).'
+        description:
+          'Point The Fool at a local or self-hosted OpenAI-compatible endpoint (vLLM, llama.cpp, Ollama, etc).'
       }
     },
     backToSignIn: 'Back to sign in',

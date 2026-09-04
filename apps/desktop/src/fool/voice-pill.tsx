@@ -37,8 +37,7 @@ import { notifyError } from '@/store/notifications'
 
 import { voiceApi, type VoiceCatalog, type VoiceClone, type VoiceItem } from './voice-api'
 
-const ROW =
-  'flex w-full items-center justify-between gap-2 px-2.5 py-1.5 text-left text-[0.78rem] transition-colors'
+const ROW = 'flex w-full items-center justify-between gap-2 px-2.5 py-1.5 text-left text-[0.78rem] transition-colors'
 
 /** Bir motorun neden seçilemediği. Boş = seçilebilir. */
 function blockedReason(item: VoiceItem): string {
@@ -237,10 +236,7 @@ export function VoicePill({ disabled }: { disabled?: boolean }) {
                   disabled={busy}
                   key={clone.id}
                   onClick={() =>
-                    void pick(
-                      () => voiceApi.selectClone(activeTts.id, clone.id),
-                      `Could not switch to ${clone.label}`
-                    )
+                    void pick(() => voiceApi.selectClone(activeTts.id, clone.id), `Could not switch to ${clone.label}`)
                   }
                   title={clone.label}
                   type="button"

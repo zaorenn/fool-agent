@@ -37,12 +37,7 @@ import { type Codec, persistentAtom } from '@/lib/persisted'
  * Yankı yok: gelen değer atomdakiyle aynı kodlanıyorsa hiç yazılmıyor.
  * Yazsaydık, iki pencere birbirinin yazısını sonsuza kadar geri yollardı.
  */
-export function adoptExternalWrites<T>(
-  $value: WritableAtom<T>,
-  key: string,
-  fallback: T,
-  codec: Codec<T>
-): void {
+export function adoptExternalWrites<T>($value: WritableAtom<T>, key: string, fallback: T, codec: Codec<T>): void {
   if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') {
     return
   }
@@ -108,12 +103,7 @@ export function sharedAtom<T>(key: string, fallback: T, codec: Codec<T>): Writab
  *
  * Köprü VARSA o kullanılıyor; yoksa (tarayıcı, sınav) depo yolu duruyor.
  */
-function adoptDesktopBridge<T>(
-  $value: WritableAtom<T>,
-  key: string,
-  fallback: T,
-  codec: Codec<T>
-): void {
+function adoptDesktopBridge<T>($value: WritableAtom<T>, key: string, fallback: T, codec: Codec<T>): void {
   const shared = typeof window === 'undefined' ? undefined : window.foolDesktop?.shared
 
   if (!shared) {
@@ -149,7 +139,9 @@ function adoptDesktopBridge<T>(
   // Acilista MEVCUT degeri al: centik sonradan aciliyor ve sesin gidecegi
   // oturum kimligi genellikle ONCE yazilmis oluyor. Yalnizca degisimleri
   // dinlemek, o degeri hic gormemek demekti.
-  void Promise.resolve(shared.get(key)).then(apply).catch(() => undefined)
+  void Promise.resolve(shared.get(key))
+    .then(apply)
+    .catch(() => undefined)
 
   shared.onChange(payload => {
     if (payload?.key === key) {

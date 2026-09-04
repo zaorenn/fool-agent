@@ -74,12 +74,7 @@ export function createFirstRunSetupGate({
   const autoLocal = process.env.FOOL_DESKTOP_AUTO_SETUP === 'local'
 
   const shouldGate = (backend?: FirstRunSetupBackend | null) =>
-    Boolean(
-      backend &&
-        backend.kind === 'bootstrap-needed' &&
-        !localBootstrapConfirmed &&
-        !autoLocal
-    )
+    Boolean(backend && backend.kind === 'bootstrap-needed' && !localBootstrapConfirmed && !autoLocal)
 
   const wait = async (backend?: FirstRunSetupBackend | null) => {
     if (!shouldGate(backend)) {

@@ -27,11 +27,7 @@ import { Mic } from '@/lib/icons'
 import { voiceApi } from '../voice-api'
 
 import { useNotchClickThrough } from './click-through'
-import {
-  MAX_IDLE_ROUNDS,
-  nextIdleRounds,
-  shouldRearmListening
-} from './hands-free'
+import { MAX_IDLE_ROUNDS, nextIdleRounds, shouldRearmListening } from './hands-free'
 import { $listenMode } from './listen-mode'
 import { liquidPourStyle, NotchEdgeWaves, NotchLiquidStyles, useLiquidPhase } from './notch-liquid'
 import { formatPttBindingLabel, parsePttBinding } from './ptt-binding'
@@ -83,7 +79,6 @@ const SUBTITLE_CHAR_PX = 7.2
 
 /** Şeridin inebileceği en dar hâl -- tek kelimelik bir cevapta bile okunur. */
 const SUBTITLE_MIN_WIDTH = 180
-
 
 /** Tur bittikten sonra yazının ekranda kalma süresi. */
 const LINGER_MS = 6000
@@ -173,9 +168,7 @@ export function NotchShell() {
       const pad = 8
 
       const inside =
-        event.clientX >= box.left - pad &&
-        event.clientX <= box.right + pad &&
-        event.clientY <= box.bottom + pad
+        event.clientX >= box.left - pad && event.clientX <= box.right + pad && event.clientY <= box.bottom + pad
 
       setHovered(inside)
     }
@@ -265,15 +258,13 @@ export function NotchShell() {
   const [subtitleWidth, setSubtitleWidth] = useState(EXPANDED_WIDTH)
 
   useEffect(() => {
-    const measure = () =>
-      setSubtitleWidth(Math.max(EXPANDED_WIDTH, window.innerWidth - SUBTITLE_MARGIN))
+    const measure = () => setSubtitleWidth(Math.max(EXPANDED_WIDTH, window.innerWidth - SUBTITLE_MARGIN))
 
     measure()
     window.addEventListener('resize', measure)
 
     return () => window.removeEventListener('resize', measure)
   }, [])
-
 
   // Oturum açılınca konuşma tanımayı ISIT.
   //
@@ -304,12 +295,10 @@ export function NotchShell() {
   // ortamda kullanıcı kaydın sınırını kendi çizmek isteyebilir.
   const [idleRounds, setIdleRounds] = useState(0)
 
-
   // Dinleme kipi Friend penceresiyle ORTAK depo (bkz. ``listen-mode.ts``):
   // iki yuzey ayni mikrofonu kullaniyor ve ayri tutmak kullaniciya iki ayri
   // hakikat sunardi.
   const rearmListenMode = useStore($listenMode)
-
 
   // Kullanıcı konuştuysa sayaç sıfırlanır; birikmiş sayaç onu bir sonraki
   // sessizlikte erken susturmamalı.
@@ -415,6 +404,7 @@ export function NotchShell() {
         if (!sessionActive) {
           setSessionActive(true)
         }
+
         // Tuşun varsayılan davranışını yutuyoruz ki basılı tutuş başka bir
         // kısayolu tetiklemesin.
         event.preventDefault()
@@ -457,7 +447,6 @@ export function NotchShell() {
     // Dogru model: kisayol oturumu ACAR, oturum boyunca sag Ctrl calisir,
     // ayni kisayol oturumu KAPATIR.
     const handleListenRequest = (request?: null | { mode?: string }) => {
-
       // Kisayol yalnizca centigi acmiyor, ARKADAS turunu de basliyor.
       // Kip oturum ACILIRKEN yaziliyor: arac kumesi ajan kurulurken donuyor,
       // Kisayol SALT BAS-KONUS aciyor.
@@ -596,87 +585,84 @@ export function NotchShell() {
           kendi ``transform``ini yaziyor ve CSS keyframe'i ayni ogeye koymak
           ikisini carpistiriyordu. */}
       <div style={liquidPourStyle(liquidPhase)}>
-      <motion.div
-        animate={{
-          // TEK bir aktif geometri var ve o INCE + UZUN.
+        <motion.div
+          animate={{
+            // TEK bir aktif geometri var ve o INCE + UZUN.
+            //
+            // Once iki ayri hal vardi: durum/dugme icin asagi dogru kalin bir
+            // kutu, alt yazi icin ince bir serit. Kullanicinin karari: "asagiya
+            // dogru kalin istemiyorum, ince ve uzun sekilde monitorun ustunde
+            // olsun." Iki ayri sekil ayrica iki ayri animasyon gibi gorunuyordu.
+            // GENISLEME yalnizca ALT YAZIYLA. Kullanicinin karari: "listening
+            // sirasinda notch bu ufak halde kalmali, mikrofon butonu gitmeli ...
+            // sadece alt yazidan alt yaziya genislemeli." Dinlerken genis serit
+            // acmak ekranin tepesini bos yere kapatiyordu.
+            height: subtitleMode ? SUBTITLE_HEIGHT : COLLAPSED_HEIGHT,
+            // Genişlik pencereye göre KIRPILMAZ: kullanıcının yakınlaştırma
+            // ayarı 110% iken pencere 460 fiziksel piksel ama yalnızca 418 CSS
+            // pikseli; sabit 420 px istemek çentiği kenardan kesiyordu.
+            opacity: hovered ? 0 : expanded || subtitleMode ? 1 : 0.72,
+            // ALT YAZI kipinde ekranın enine yayılıyor: model konuşurken cevabın
+            // tamamı tek satıra sığsın diye.
+            width: subtitleMode
+              ? Math.min(subtitleWidth, Math.max(SUBTITLE_MIN_WIDTH, voice.reply.length * SUBTITLE_CHAR_PX + 56))
+              : COLLAPSED_WIDTH
+          }}
+          // Üst köşeler DÜZ, alt köşeler yuvarlak — ekrana oyulmuş çentik.
           //
-          // Once iki ayri hal vardi: durum/dugme icin asagi dogru kalin bir
-          // kutu, alt yazi icin ince bir serit. Kullanicinin karari: "asagiya
-          // dogru kalin istemiyorum, ince ve uzun sekilde monitorun ustunde
-          // olsun." Iki ayri sekil ayrica iki ayri animasyon gibi gorunuyordu.
-          // GENISLEME yalnizca ALT YAZIYLA. Kullanicinin karari: "listening
-          // sirasinda notch bu ufak halde kalmali, mikrofon butonu gitmeli ...
-          // sadece alt yazidan alt yaziya genislemeli." Dinlerken genis serit
-          // acmak ekranin tepesini bos yere kapatiyordu.
-          height: subtitleMode ? SUBTITLE_HEIGHT : COLLAPSED_HEIGHT,
-          // Genişlik pencereye göre KIRPILMAZ: kullanıcının yakınlaştırma
-          // ayarı 110% iken pencere 460 fiziksel piksel ama yalnızca 418 CSS
-          // pikseli; sabit 420 px istemek çentiği kenardan kesiyordu.
-          opacity: hovered ? 0 : expanded || subtitleMode ? 1 : 0.72,
-          // ALT YAZI kipinde ekranın enine yayılıyor: model konuşurken cevabın
-          // tamamı tek satıra sığsın diye.
-          width: subtitleMode
-            ? Math.min(
-                subtitleWidth,
-                Math.max(SUBTITLE_MIN_WIDTH, voice.reply.length * SUBTITLE_CHAR_PX + 56)
-              )
-            : COLLAPSED_WIDTH
-        }}
-        // Üst köşeler DÜZ, alt köşeler yuvarlak — ekrana oyulmuş çentik.
-        //
-        // Renkler TEMADAN geliyor, sabit siyah değil: uygulamanın vurgu rengi
-        // değiştiğinde çentik de onunla değişmeli, yoksa ekranın tepesinde
-        // temaya ait olmayan bir kara leke kalıyor.
-        className="max-w-full overflow-hidden rounded-b-[18px] border-x border-b border-white/10 text-(--ui-text-primary) shadow-[0_8px_28px_rgba(0,0,0,0.28)] backdrop-blur-2xl backdrop-saturate-150"
-        initial={false}
-        // Fare üzerine gelince TAMAMEN görünmez: çentik ekranın en üstünde
-        // duruyor ve oradaki sekmeleri/menüleri kapatmamalı. Görünmezken
-        // fareyi de geçiriyor (pointer-events), yani altındaki şeye tıklanır.
-        ref={shellRef}
-        // Buzlu cam: SAF SIYAH degil. Arkaplan yariya kadar saydam ve
-        // dinlerken vurgu rengiyle hafifce tonlaniyor, boylece centik
-        // ekranin bir parcasi gibi duruyor -- uzerine yapistirilmis bir
-        // kutu gibi degil.
-        style={{
-          background:
-            voice.status === 'listening'
-              ? 'color-mix(in srgb, var(--theme-primary) 18%, rgb(0 0 0 / 0.45))'
-              : 'rgb(0 0 0 / 0.42)',
-          pointerEvents: 'none'
-        }}
-        transition={hovered ? { duration: 0.18 } : SPRING}
-      >
-        <AnimatePresence initial={false} mode="wait">
-          {/* ALT YAZI kipi: model konusurken serit yatay uzuyor ve icinde
+          // Renkler TEMADAN geliyor, sabit siyah değil: uygulamanın vurgu rengi
+          // değiştiğinde çentik de onunla değişmeli, yoksa ekranın tepesinde
+          // temaya ait olmayan bir kara leke kalıyor.
+          className="max-w-full overflow-hidden rounded-b-[18px] border-x border-b border-white/10 text-(--ui-text-primary) shadow-[0_8px_28px_rgba(0,0,0,0.28)] backdrop-blur-2xl backdrop-saturate-150"
+          initial={false}
+          // Fare üzerine gelince TAMAMEN görünmez: çentik ekranın en üstünde
+          // duruyor ve oradaki sekmeleri/menüleri kapatmamalı. Görünmezken
+          // fareyi de geçiriyor (pointer-events), yani altındaki şeye tıklanır.
+          ref={shellRef}
+          // Buzlu cam: SAF SIYAH degil. Arkaplan yariya kadar saydam ve
+          // dinlerken vurgu rengiyle hafifce tonlaniyor, boylece centik
+          // ekranin bir parcasi gibi duruyor -- uzerine yapistirilmis bir
+          // kutu gibi degil.
+          style={{
+            background:
+              voice.status === 'listening'
+                ? 'color-mix(in srgb, var(--theme-primary) 18%, rgb(0 0 0 / 0.45))'
+                : 'rgb(0 0 0 / 0.42)',
+            pointerEvents: 'none'
+          }}
+          transition={hovered ? { duration: 0.18 } : SPRING}
+        >
+          <AnimatePresence initial={false} mode="wait">
+            {/* ALT YAZI kipi: model konusurken serit yatay uzuyor ve icinde
               YALNIZCA metin var.
 
               Mikrofon, dalga formu ve kip dugmesi burada CIZILMIYOR --
               kullanicinin karari: "mikrofon simgesi kaybolsun ve notch yatay
               olarak genislesin". Ikisi de dogru: konusan model, dinleyen
               kullanici degil; ve seritte her piksel metne gidiyor. */}
-          {subtitleMode ? (
-            <motion.div
-              animate={{ opacity: 1 }}
-              className="flex h-full items-center justify-center px-6"
-              exit={{ opacity: 0 }}
-              initial={{ opacity: 0 }}
-              key="subtitle"
-              transition={{ duration: 0.12 }}
-            >
-              <div className="truncate text-center text-[0.82rem] leading-tight text-(--ui-text-primary)">
-                {voice.reply}
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div
-              animate={{ opacity: 1 }}
-              className="flex h-full items-center justify-center gap-2 px-4"
-              exit={{ opacity: 0 }}
-              initial={{ opacity: 0 }}
-              key="collapsed"
-              transition={{ duration: 0.12 }}
-            >
-              {/* Kapali halde METIN YOK. Kisayolu surekli yazmak centigi
+            {subtitleMode ? (
+              <motion.div
+                animate={{ opacity: 1 }}
+                className="flex h-full items-center justify-center px-6"
+                exit={{ opacity: 0 }}
+                initial={{ opacity: 0 }}
+                key="subtitle"
+                transition={{ duration: 0.12 }}
+              >
+                <div className="truncate text-center text-[0.82rem] leading-tight text-(--ui-text-primary)">
+                  {voice.reply}
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                animate={{ opacity: 1 }}
+                className="flex h-full items-center justify-center gap-2 px-4"
+                exit={{ opacity: 0 }}
+                initial={{ opacity: 0 }}
+                key="collapsed"
+                transition={{ duration: 0.12 }}
+              >
+                {/* Kapali halde METIN YOK. Kisayolu surekli yazmak centigi
                   genisletiyor ve ekranin tepesinde gereksiz yer kapliyordu;
                   kullanici onu zaten bir kez ogreniyor. Kisayol yalnizca
                   uzerine gelindiginde ipucu olarak duruyor.
@@ -684,19 +670,19 @@ export function NotchShell() {
                   ETKINKEN MIKROFON YOK: kullanicinin karari "listening
                   sirasinda ... mikrofon butonu gitmeli". Geriye canli nokta
                   kaliyor -- seviyeye gore nefes alan tek bir isaret. */}
-              {!expanded && <Mic className="size-3 text-(--theme-primary)" />}
-              <span
-                className="rounded-full bg-(--theme-primary) transition-all duration-150"
-                style={{
-                  height: expanded ? 5 + voice.level * 5 : 4,
-                  opacity: expanded ? 0.55 + voice.level * 0.45 : 0.6,
-                  width: expanded ? 5 + voice.level * 5 : 4
-                }}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
+                {!expanded && <Mic className="size-3 text-(--theme-primary)" />}
+                <span
+                  className="rounded-full bg-(--theme-primary) transition-all duration-150"
+                  style={{
+                    height: expanded ? 5 + voice.level * 5 : 4,
+                    opacity: expanded ? 0.55 + voice.level * 0.45 : 0.6,
+                    width: expanded ? 5 + voice.level * 5 : 4
+                  }}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
       </div>
 
       {/* Masaustundeki pet: cubuktan asagi damliyor ve orada duruyor.

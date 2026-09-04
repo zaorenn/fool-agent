@@ -292,9 +292,7 @@ test('pin runtime gecmisindeyse TRUE -- ve dogru komut kosuluyor', () => {
   })
 
   assert.equal(answer, true)
-  assert.deepEqual(calls, [
-    ['-c', 'windows.appendAtomically=false', 'merge-base', '--is-ancestor', PIN, 'HEAD']
-  ])
+  assert.deepEqual(calls, [['-c', 'windows.appendAtomically=false', 'merge-base', '--is-ancestor', PIN, 'HEAD']])
 })
 
 test('git CIKIS 1 verirse FALSE -- kesin cevap', () => {

@@ -230,7 +230,6 @@ export function useMicRecorder(copy: MicRecorderErrorCopy): {
             return
           }
         }
-
       }
 
       meter.onaudioprocess = tick
