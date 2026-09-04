@@ -123,6 +123,91 @@ try:
 except (TypeError, ValueError):
     _accepts = set()
 
+_SCRIPTS = (
+    ("ja", lambda t: any(0x3040 <= ord(c) <= 0x309F or 0x30A0 <= ord(c) <= 0x30FF for c in t)),
+    ("ko", lambda t: any(0xAC00 <= ord(c) <= 0xD7AF or 0x1100 <= ord(c) <= 0x11FF or 0x3130 <= ord(c) <= 0x318F for c in t)),
+    ("zh", lambda t: any(0x4E00 <= ord(c) <= 0x9FFF for c in t)),
+    ("ru", lambda t: any(0x0400 <= ord(c) <= 0x04FF for c in t)),
+    ("ar", lambda t: any(0x0600 <= ord(c) <= 0x06FF for c in t)),
+    ("he", lambda t: any(0x0590 <= ord(c) <= 0x05FF for c in t)),
+    ("hi", lambda t: any(0x0900 <= ord(c) <= 0x097F for c in t)),
+    ("el", lambda t: any(0x0370 <= ord(c) <= 0x03FF for c in t)),
+)
+
+_TR_UNIQUE = frozenset("ıİğĞşŞ")
+_TR_DIACRITICS = frozenset("çÇöÖüÜ")
+
+_VOCAB = {
+    "en": frozenset({
+        "i", "im", "the", "is", "are", "am", "you", "your", "my", "and", "to", "in", "it",
+        "listening", "hello", "hi", "hey", "what", "why", "how", "can", "help", "for", "with",
+        "on", "that", "this", "have", "has", "do", "does", "did", "not", "yes", "no", "sure",
+        "okay", "ok", "please", "thanks", "thank", "good", "well", "will", "would", "could",
+        "should", "be", "been", "there", "here", "we", "they", "our", "their", "of", "at", "by",
+        "from", "as", "so", "just", "now", "about", "like", "see", "know", "think", "say", "go",
+        "get", "make", "take", "come", "all", "any", "some", "me", "him", "her", "us", "them",
+        "right", "got", "listen", "let", "want", "need", "ready", "start", "stop", "fine"
+    }),
+    "tr": frozenset({
+        "ben", "sen", "o", "biz", "siz", "onlar", "bir", "ve", "veya", "ama", "fakat",
+        "icin", "için", "ile", "bu", "su", "şu", "ne", "nasil", "nasıl", "neden", "niye",
+        "kim", "tamam", "evet", "hayir", "hayır", "peki", "merhaba", "selam", "dinliyorum",
+        "yardim", "yardım", "edebilirim", "yapabilirim", "var", "yok", "cok", "çok", "daha",
+        "en", "gibi", "kadar", "sonra", "once", "önce", "simdi", "şimdi", "burada", "surada",
+        "orada", "guzel", "güzel", "iyi", "kotu", "kötü", "olur", "olmaz", "lutfen", "lütfen",
+        "tesekkur", "teşekkür", "ederim", "sagol", "sağol", "tamamdir", "tamamdır", "anladim",
+        "anladım", "oldu", "bakarim", "bakarım", "bakarız", "bakariz", "gorusuruz", "görüşürüz",
+        "dinle", "hazirim", "hazırım", "efendim", "tabii", "tabi", "aynen"
+    }),
+    "de": frozenset({
+        "ich", "du", "er", "sie", "es", "wir", "ihr", "und", "der", "die", "das", "ein", "eine",
+        "nicht", "ist", "sind", "ja", "nein", "danke", "bitte", "hallo", "gut", "sehr"
+    }),
+    "fr": frozenset({
+        "je", "tu", "il", "elle", "nous", "vous", "ils", "elles", "et", "le", "la", "les", "un",
+        "une", "pas", "est", "sont", "oui", "non", "merci", "bonjour", "salut", "bien"
+    }),
+    "es": frozenset({
+        "yo", "tu", "tú", "el", "él", "ella", "nosotros", "ellos", "ellas", "y", "la", "los", "las",
+        "un", "una", "no", "si", "sí", "es", "son", "gracias", "hola", "bien", "muy"
+    })
+}
+
+import re as _re
+
+def _detect_sentence_language(text: str, default: str = "tr") -> str:
+    if not text or not text.strip():
+        return default
+
+    # 1. Non-latin script detection (100% certainty)
+    for lang, check in _SCRIPTS:
+        if check(text):
+            return lang
+
+    # 2. Turkish unique letters
+    if any(c in _TR_UNIQUE for c in text):
+        return "tr"
+
+    # 3. Tokenize words
+    words = [w.replace("'", "") for w in _re.findall(r"[a-zA-ZçÇöÖüÜäÄßéÉèÈàÀâÂêÊôÔîÎùÙñÑíÍóÓúÚáÁ']+", text.lower())]
+    if not words:
+        return default
+
+    scores = {lang: 0 for lang in _VOCAB}
+    if any(c in _TR_DIACRITICS for c in text):
+        scores["tr"] += 2
+
+    for w in words:
+        for lang, word_set in _VOCAB.items():
+            if w in word_set:
+                scores[lang] += 3
+
+    best_lang, best_score = max(scores.items(), key=lambda item: item[1])
+    if best_score > 0:
+        return best_lang
+
+    return default
+
 
 def handle(req):
     kwargs = {}
@@ -132,15 +217,18 @@ def handle(req):
         kwargs["exaggeration"] = float(req["exaggeration"])
     if req.get("cfg_weight") and "cfg_weight" in _accepts:
         kwargs["cfg_weight"] = float(req["cfg_weight"])
-    # Cok dilli motorda ZORUNLU; tekdilli motorda parametre yok ve
-    # gondermek TypeError ile sessizlige dusururdu.
-    if _lang and "language_id" in _accepts:
-        kwargs["language_id"] = _lang
+
+    # Cok dilli modelde her cumleyi kendi orijinal dilinde seslendir:
+    # 'I\\'m listening' -> Ingilizce, 'Tamam' -> Turkce, 'こんにちは' -> Japonca
+    if "language_id" in _accepts:
+        req_lang = (req.get("language") or "").strip().lower()
+        fallback = req_lang if req_lang and req_lang != "auto" else (_lang or "en")
+        kwargs["language_id"] = _detect_sentence_language(req["text"], default=fallback)
 
     wav = _model.generate(req["text"], **kwargs)
     torchaudio.save(req["out"], wav, _model.sr)
 
-    return {"path": req["out"], "device": _device, "variant": _variant}
+    return {"path": req["out"], "device": _device, "variant": _variant, "language_id": kwargs.get("language_id")}
 """
 
 
@@ -289,11 +377,18 @@ class ChatterboxTTSProvider(TTSProvider):
         if not target.lower().endswith(".wav"):
             target = os.path.splitext(output_path)[0] + ".wav"
 
-        # Dil: yapilandirmadan gelir, bos birakilirsa Ingilizce (turbo) yol.
-        # Desteklenmeyen bir kod SESSIZCE yok sayilmiyor -- yok sayilsaydi
-        # kullanici Turkce secip Ingilizce fonetik duyar ve sebebini hicbir
-        # yerden goremezdi.
+        # Dil: yapilandirmadan gelir, bos birakilirsa STT yerel dili kontrol edilir
+        # (orn. stt.local.language: tr). Hicbiri yoksa Ingilizce (turbo) yoluna duser.
         language = str(cfg.get("language") or "").strip().lower()
+        if not language:
+            stt_cfg = config.get("stt") if isinstance(config, dict) else {}
+            stt_local = (stt_cfg.get("local") or {}) if isinstance(stt_cfg, dict) else {}
+            stt_lang = stt_local.get("language") if isinstance(stt_local, dict) else None
+            if not stt_lang and isinstance(config.get("language"), str):
+                stt_lang = config.get("language")
+            if isinstance(stt_lang, str) and stt_lang.strip().lower() in _SUPPORTED_LANGUAGES:
+                language = stt_lang.strip().lower()
+
         if language and language not in _SUPPORTED_LANGUAGES:
             logger.warning(
                 "[Chatterbox] desteklenmeyen dil %r yok sayildi; desteklenenler: %s",
@@ -308,6 +403,7 @@ class ChatterboxTTSProvider(TTSProvider):
             {
                 "cfg_weight": _num("cfg_weight"),
                 "exaggeration": _num("exaggeration"),
+                "language": language,
                 "out": target,
                 "sample": sample,
                 "text": text,

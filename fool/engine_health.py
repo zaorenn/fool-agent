@@ -130,6 +130,11 @@ def _run_probe(entry: Any, modules: tuple[str, ...]) -> str:
         return ""
 
     env = dict(os.environ)
+    if os.name == "nt":
+        import glob
+        for c in glob.glob(os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\WinGet\Packages\*FFmpeg*Shared*\*\bin")):
+            if os.path.isdir(c) and c not in env.get("PATH", ""):
+                env["PATH"] = c + ";" + env.get("PATH", "")
     # Konsol cp1254 IPA/UTF-8 karakterlerinde patlıyor ve sondanın kendisi
     # sahte bir hata üretiyordu.
     env["PYTHONIOENCODING"] = "utf-8"

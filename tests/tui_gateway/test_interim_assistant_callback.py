@@ -50,3 +50,44 @@ def test_agent_cbs_includes_interim_callback_when_enabled():
     assert emitted[0][2]["already_streamed"] is True
 
 
+def test_run_prompt_submit_handles_none_agent_gracefully(monkeypatch):
+    """When session['agent'] is None, _run_prompt_submit must not crash with
+    AttributeError: 'NoneType' object has no attribute 'interim_assistant_callback'."""
+    import threading
+    import tui_gateway.server as server
+
+    class _SyncThread:
+        def __init__(self, target, daemon=None):
+            self._target = target
+
+        def start(self):
+            if self._target:
+                self._target()
+
+    monkeypatch.setattr(server, "_RealThread", _SyncThread)
+
+    emitted = []
+
+    def fake_emit(event_type, sid, payload=None):
+        emitted.append((event_type, sid, payload))
+
+    monkeypatch.setattr(server, "_emit", fake_emit)
+
+    session = {
+        "agent": None,
+        "session_key": "test-key",
+        "history": [],
+        "history_lock": threading.Lock(),
+        "history_version": 0,
+        "running": True,
+        "attached_images": [],
+        "cols": 80,
+    }
+
+    server._run_prompt_submit("rid", "sid", session, "hello")
+    if session.get("_run_thread"):
+        session["_run_thread"].join(timeout=5.0)
+    terminal_events = [e for e in emitted if e[0] in ("message.complete", "error")]
+    assert len(terminal_events) >= 1
+
+

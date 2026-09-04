@@ -10553,8 +10553,8 @@ def _run_prompt_submit(
         # by the time a new turn starts — replace it, never append onto it.
         if not isinstance(inflight, dict) or inflight.get("status") == "error":
             _start_inflight_turn(session, text)
-        agent = session["agent"]
-        if hasattr(agent, "clear_interrupt"):
+        agent = session.get("agent")
+        if agent is not None and hasattr(agent, "clear_interrupt"):
             try:
                 agent.clear_interrupt()
             except Exception:
@@ -10590,7 +10590,7 @@ def _run_prompt_submit(
         # Bound eagerly so the except/finally paths below always have an agent
         # even if turn setup throws; re-read after _sync_bot_capabilities,
         # which may swap in a rebuilt agent for Bot Chat sessions.
-        agent = session["agent"]
+        agent = session.get("agent")
         approval_token = None
         session_tokens = []
         home_token = None  # per-turn FOOL_HOME override for a resumed remote profile
@@ -10600,6 +10600,7 @@ def _run_prompt_submit(
         tts_queue = None  # streaming-TTS feed for this turn (voice mode)
         thinking_started = False  # ambient thinking sound armed for this turn
         one_turn_restore = session.pop("one_turn_model_restore", None)
+        history: list = []
         # True once a failed turn's snapshot was retained for resume replay —
         # tells the finally below to skip the normal inflight clear.
         turn_error_retained = False
@@ -10655,7 +10656,18 @@ def _run_prompt_submit(
             # (skills/toolsets/MCP/SOUL) into the eternal bot session before
             # the turn runs. No-op for every other session shape.
             _sync_bot_capabilities(sid, session)
-            agent = session["agent"]
+            agent = session.get("agent")
+            if agent is None:
+                _wait_agent_for_prompt(session, rid, sid)
+                agent = session.get("agent")
+            if agent is None:
+                logger.error("tui prompt submit failed: session %s has no agent", sid)
+                _emit_terminal_turn_error(
+                    sid,
+                    session,
+                    "Agent is not initialized or unavailable.",
+                )
+                return
             # Snapshot after turn-start model sync. A deferred switch mutates
             # history and its version; that mutation belongs to this turn.
             with session["history_lock"]:
@@ -10831,16 +10843,17 @@ def _run_prompt_submit(
             # nudge) so the desktop can seal it as its own segment instead of
             # losing it when message.complete replaces the streaming buffer.
             # Gated on display.interim_assistant_messages (default true).
-            if _load_interim_assistant_messages():
-                def _interim_assistant_cb(text: str, *, already_streamed: bool = False) -> None:
-                    _emit("message.interim", sid, {
-                        "text": text,
-                        "already_streamed": already_streamed,
-                    })
+            if agent is not None:
+                if _load_interim_assistant_messages():
+                    def _interim_assistant_cb(text: str, *, already_streamed: bool = False) -> None:
+                        _emit("message.interim", sid, {
+                            "text": text,
+                            "already_streamed": already_streamed,
+                        })
 
-                agent.interim_assistant_callback = _interim_assistant_cb
-            else:
-                agent.interim_assistant_callback = None
+                    agent.interim_assistant_callback = _interim_assistant_cb
+                else:
+                    agent.interim_assistant_callback = None
 
             run_kwargs = {
                 "conversation_history": list(history),
@@ -10856,7 +10869,7 @@ def _run_prompt_submit(
             # fallback for an older agent without the parameter; re-stamping
             # the same value is a no-op.
             try:
-                _run_params = inspect.signature(agent.run_conversation).parameters
+                _run_params = inspect.signature(agent.run_conversation).parameters if agent is not None else {}
             except (TypeError, ValueError):
                 _run_params = {}
             if "task_id" in _run_params:
@@ -10869,9 +10882,10 @@ def _run_prompt_submit(
             # sidebar repaints the moment a title lands, rather than waiting
             # for the next list refresh.
             _title_key = session.get("session_key") or sid
-            agent._on_session_title = lambda t, _src, _k=_title_key: _emit(
-                "session.title", sid, {"session_id": _k, "title": t}
-            )
+            if agent is not None:
+                agent._on_session_title = lambda t, _src, _k=_title_key: _emit(
+                    "session.title", sid, {"session_id": _k, "title": t}
+                )
             _usage_stop, _usage_thread = _start_usage_ticker(sid, agent)
             try:
                 result = agent.run_conversation(run_message, **run_kwargs)
@@ -11296,7 +11310,8 @@ def _run_prompt_submit(
             # Drop both local snapshots of the pre-turn history before asking
             # glibc to return pages. session["history"] already points at the
             # new/pruned result; retaining either list defeats this trim.
-            history.clear()
+            if isinstance(history, list):
+                history.clear()
             local_run_kwargs = locals().get("run_kwargs")
             if isinstance(local_run_kwargs, dict):
                 local_run_kwargs.clear()
@@ -11343,7 +11358,8 @@ def _run_prompt_submit(
             reset_transport(transport_token)
             # Clear the per-turn interim callback so a stale closure from
             # this turn can't fire during a later turn on the same agent.
-            agent.interim_assistant_callback = None
+            if agent is not None:
+                agent.interim_assistant_callback = None
             with session["history_lock"]:
                 session["running"] = False
                 session["last_active"] = time.time()

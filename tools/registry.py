@@ -1117,6 +1117,11 @@ class ToolRegistry:
         """
         entry = self.get_entry(name, scope=scope)
         if not entry:
+            if " " in name or name.startswith(("fool ", "hermes ")):
+                return tool_error(
+                    f"Unknown tool '{name}'. This looks like a shell command. "
+                    f"To execute shell commands, call the 'terminal' tool with command={name!r}."
+                )
             return tool_error(f"Unknown tool: {name}")
         try:
             if entry.is_async:

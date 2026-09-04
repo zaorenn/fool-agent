@@ -44,28 +44,37 @@ import os
 import pathlib
 import site
 
-import torch
-
 os.environ.setdefault("PYTHONIOENCODING", "utf-8")
+
+if os.name == "nt":
+    import glob
+    candidates = glob.glob(os.path.expandvars(r"%LOCALAPPDATA%\\Microsoft\\WinGet\\Packages\\*FFmpeg*Shared*\\*\\bin"))
+    for c in candidates:
+        if os.path.isdir(c):
+            try:
+                os.add_dll_directory(c)
+                os.environ["PATH"] = c + ";" + os.environ.get("PATH", "")
+            except Exception:
+                pass
+
+import torch
 
 _device = "cuda" if (DEVICE == "auto" and torch.cuda.is_available()) else DEVICE
 if _device == "cuda" and not torch.cuda.is_available():
     _device = "cpu"
 
-# ``torchcodec`` PAYLASILAN FFmpeg kutuphanelerine ihtiyac duyuyor
-# (avcodec/avformat/avutil DLL'leri) ve yalnizca FFmpeg 4-7'yi destekliyor.
-# Statik bir ffmpeg.exe YETMIYOR -- olculdu: bu makinede winget'ten gelen
-# FFmpeg 9 statik derleme ve hic DLL yok, motor ham bir DLL yiginiyla
-# dusuyordu. Kullaniciya NE eksik oldugunu soylemek gerekiyor.
+# torchaudio.load hook: soundfile is fast, robust, and doesn't fail on Windows
 try:
-    import torchcodec  # noqa: F401
-except Exception as _codec_err:
-    raise RuntimeError(
-        "F5-TTS needs shared FFmpeg libraries (avcodec/avformat/avutil, "
-        "version 4-7) that torchcodec loads at import. A static ffmpeg.exe "
-        "is not enough. Install a shared FFmpeg build and make sure its "
-        f"DLLs are on PATH. Underlying error: {_codec_err}"
-    ) from _codec_err
+    import soundfile as _sf
+    import torchaudio as _ta
+
+    def _safe_load(uri, *args, **kwargs):
+        data, sr = _sf.read(uri, dtype="float32", always_2d=True)
+        return torch.from_numpy(data.T), sr
+
+    _ta.load = _safe_load
+except Exception:
+    pass
 
 from f5_tts.api import F5TTS
 
@@ -73,14 +82,21 @@ _model = None
 
 
 def _bundled_reference():
-    # Paketin kendi ornek kaydi. ``f5_tts.__file__`` None (ad alani paketi),
-    # o yuzden site-packages uzerinden bulunuyor.
     for root in site.getsitepackages():
-        candidate = (
-            pathlib.Path(root) / "f5_tts" / "infer" / "examples" / "basic" / "basic_ref_en.wav"
-        )
-        if candidate.exists():
-            return str(candidate)
+        for sub in ("", "Lib/site-packages"):
+            candidate = (
+                pathlib.Path(root) / sub / "f5_tts" / "infer" / "examples" / "basic" / "basic_ref_en.wav"
+            )
+            if candidate.exists():
+                return str(candidate)
+    try:
+        import f5_tts
+        for p in getattr(f5_tts, "__path__", []):
+            cand = pathlib.Path(p) / "infer" / "examples" / "basic" / "basic_ref_en.wav"
+            if cand.exists():
+                return str(cand)
+    except Exception:
+        pass
     raise RuntimeError("F5-TTS ornek referans kaydi bulunamadi")
 
 
@@ -104,8 +120,8 @@ def handle(req):
         ref_text=ref_text,
         gen_text=req["text"],
         file_wave=req["out"],
-        # ``nfe_step`` kalite/hiz dugmesi; 32 varsayilan.
-        nfe_step=int(req.get("steps") or 32),
+        # ``nfe_step`` kalite/hiz dugmesi; 24 adim Turkce ve Ingilizce icin dengeli ve hizli.
+        nfe_step=int(req.get("steps") or 24),
         speed=float(req.get("speed") or 1.0),
         show_info=lambda *a, **k: None,
     )
@@ -187,15 +203,50 @@ class F5TTSProvider(TTSProvider):
         if not target.lower().endswith(".wav"):
             target = os.path.splitext(output_path)[0] + ".wav"
 
+        # Referans dosyasi: voice argumani > yapilandirma
+        reference = None
+        if voice and voice != "default" and os.path.isfile(voice):
+            reference = voice
+        elif isinstance(cfg.get("reference"), str):
+            candidate = os.path.expanduser(cfg["reference"])
+            if os.path.isfile(candidate):
+                reference = candidate
+
+        # Hizli referans metni: Onceden cikartilmis metin yoksa yerel faster-whisper
+        # ile bir kez yaziya dokulup yanina .txt olarak onbelleklenir. Boylece F5-TTS
+        # alt sureci kendi icinde 1.6 GB'lik transformers whisper indirmek zorunda kalmaz.
+        ref_text = cfg.get("reference_text")
+        if not ref_text and reference and os.path.isfile(reference):
+            txt_file = os.path.splitext(reference)[0] + ".txt"
+            if os.path.isfile(txt_file):
+                try:
+                    with open(txt_file, "r", encoding="utf-8") as f:
+                        ref_text = f.read().strip()
+                except Exception:
+                    pass
+            if not ref_text:
+                try:
+                    from tools.transcription_tools import transcribe_audio
+                    res = transcribe_audio(reference)
+                    if res.get("success") and res.get("transcript"):
+                        ref_text = res["transcript"].strip()
+                        try:
+                            with open(txt_file, "w", encoding="utf-8") as f:
+                                f.write(ref_text)
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
+
         result = engine_host.request(
             SIDECAR_NAME,
             _SETUP.replace("DEVICE", repr(device)).replace("REF_TEXT", repr(_BUNDLED_REF_TEXT)),
             {
                 "out": target,
-                "reference": cfg.get("reference") or None,
-                "reference_text": cfg.get("reference_text"),
+                "reference": reference,
+                "reference_text": ref_text,
                 "speed": speed or 1.0,
-                "steps": cfg.get("nfe_step") or 32,
+                "steps": cfg.get("nfe_step") or 24,
                 "text": text,
             },
         )

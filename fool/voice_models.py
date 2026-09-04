@@ -541,6 +541,7 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
         ),
         dep_group="stt.faster_whisper",
         probe_module="faster_whisper",
+        cuda_group="stt.cuda",
         cuda_probe="ctranslate2",
         model_id="large-v3-turbo",
         warmup=(
@@ -561,6 +562,7 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
         ),
         dep_group="stt.faster_whisper",
         probe_module="faster_whisper",
+        cuda_group="stt.cuda",
         cuda_probe="ctranslate2",
         #: Kendi AGIRLIGI olmadan "kurulu" gorunuyordu.
         #:

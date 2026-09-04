@@ -75,9 +75,10 @@ of pretending to switch."""
 ACCENT_COLOR_GUIDANCE: Final[str] = """CHANGING THE APP'S ACCENT COLOUR
 When the user asks for a different accent/highlight colour — "make it greener",
 "daha yeşil olsun", "I want a warmer accent", "change the theme colour to
-purple" — do it immediately with one shell command:
+purple" — do it immediately using the `terminal` tool with the shell command:
 
     fool skin set ui_accent '#22c55e'
+(invoke terminal(command="fool skin set ui_accent '<hex>'"))
 
 Pick a concrete hex yourself from what they asked for; do not ask them for a
 hex code. Reasonable choices: green #22c55e, blue #3b82f6, purple #a855f7,

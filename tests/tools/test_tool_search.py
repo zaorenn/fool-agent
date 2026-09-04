@@ -278,6 +278,42 @@ class TestBridgeDispatch:
         assert err is not None
         assert "bridge tool" in err.lower()
 
+    def test_resolve_underlying_call_unwraps_nested_envelopes(self):
+        """Local models wrapping arguments inside an envelope are unwrapped."""
+        from tools.tool_search import resolve_underlying_call
+        from tools.registry import registry
+        registry.register(
+            name="test_deferrable_tool",
+            toolset="mcp-test",
+            schema={"description": "test"},
+            handler=lambda args: "ok",
+        )
+        try:
+            name, raw_args, err = resolve_underlying_call({
+                "arguments": {
+                    "name": "test_deferrable_tool",
+                    "arguments": {"key": "value"}
+                }
+            })
+            assert err is None
+            assert name == "test_deferrable_tool"
+            assert raw_args == {"key": "value"}
+        finally:
+            registry.deregister("test_deferrable_tool")
+
+    def test_resolve_underlying_call_shell_command_hint(self):
+        """Shell commands called as tool names return a clear hint to use terminal."""
+        from tools.tool_search import resolve_underlying_call
+        name, raw_args, err = resolve_underlying_call({
+            "arguments": {
+                "name": "fool skin set ui_accent",
+                "arguments": {"ui_accent": "#22c55e"}
+            }
+        })
+        assert err is not None
+        assert "terminal" in err.lower()
+        assert "fool skin set ui_accent" in err
+
 
 # ---------------------------------------------------------------------------
 # End-to-end via the real handle_function_call (smoke test).

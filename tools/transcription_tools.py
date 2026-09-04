@@ -317,12 +317,16 @@ def _normalize_local_model(model_name: Optional[str]) -> str:
     ``medium``, or ``large-v*``).  When such a name is detected we fall back to
     the default local model and emit a warning so the user knows what happened.
     """
+    if model_name in {"whisper-large-v3-turbo", "whisper-turbo", "large-v3-turbo"}:
+        return "large-v3-turbo"
+    if model_name in {"whisper-large-v3", "large-v3"}:
+        return "large-v3"
     if not model_name or model_name in OPENAI_MODELS or model_name in GROQ_MODELS:
         if model_name and (model_name in OPENAI_MODELS or model_name in GROQ_MODELS):
             logger.warning(
                 "STT model '%s' is a cloud-only name and cannot be used with the local "
                 "provider. Falling back to '%s'. Set stt.local.model to a valid "
-                "faster-whisper size (tiny, base, small, medium, large-v3).",
+                "faster-whisper size (tiny, base, small, medium, large-v3, large-v3-turbo).",
                 model_name,
                 DEFAULT_LOCAL_MODEL,
             )
@@ -1825,6 +1829,14 @@ def _load_local_whisper_model(model_name: str, device: str = "auto", compute_typ
         # gateway survives, then keep inference on CPU to avoid device probing.
         os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
 
+    if platform.system() == "Windows" and not force_cpu:
+        try:
+            from fool.cuda_runtime import enable as _enable_cuda_dlls
+
+            _enable_cuda_dlls()
+        except Exception:
+            pass
+
     from faster_whisper import WhisperModel
     if force_cpu:
         reason = (
@@ -1915,6 +1927,9 @@ def build_local_transcribe_kwargs(stt_config: Optional[Dict[str, Any]] = None) -
     forced_lang = _resolve_stt_language("local", stt_config)
     if forced_lang:
         kwargs["language"] = forced_lang
+        if forced_lang.lower() not in {"en", "english"} and log_prob_threshold == _LOGPROB_THRESHOLD_DEFAULT:
+            log_prob_threshold = -1.5
+            kwargs["log_prob_threshold"] = log_prob_threshold
 
     initial_prompt = local_cfg.get("initial_prompt")
     if isinstance(initial_prompt, str) and initial_prompt.strip():

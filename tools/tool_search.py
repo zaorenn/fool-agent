@@ -1026,14 +1026,44 @@ def resolve_underlying_call(args: Dict[str, Any]) -> Tuple[Optional[str], Dict[s
 
     On parse error, returns ``(None, {}, error_message)``.
     """
-    name = str(args.get("name") or "").strip()
+    if not isinstance(args, dict):
+        if isinstance(args, str):
+            try:
+                args = json.loads(args)
+            except Exception:
+                return None, {}, "tool_call requires a 'name' argument"
+        if not isinstance(args, dict):
+            return None, {}, "tool_call requires a 'name' argument"
+
+    # Unwrap envelope if the model wrapped the tool call payload inside
+    # "arguments", "parameters", or "input" (common with local models like Gemma 4,
+    # Qwen, Llama in LM Studio / Ollama).
+    name = str(args.get("name") or args.get("tool_name") or "").strip()
+    if not name:
+        for envelope_key in ("arguments", "parameters", "input"):
+            sub = args.get(envelope_key)
+            if isinstance(sub, str):
+                try:
+                    sub = json.loads(sub)
+                except Exception:
+                    continue
+            if isinstance(sub, dict) and (sub.get("name") or sub.get("tool_name")):
+                args = sub
+                name = str(args.get("name") or args.get("tool_name") or "").strip()
+                break
+
     if not name:
         return None, {}, "tool_call requires a 'name' argument"
     if name in BRIDGE_TOOL_NAMES:
         return None, {}, f"tool_call cannot invoke '{name}' (it is itself a bridge tool)"
     raw_args = args.get("arguments")
+    if raw_args is None and "parameters" in args:
+        raw_args = args.get("parameters")
+    if raw_args is None and "input" in args:
+        raw_args = args.get("input")
     if raw_args is None:
-        raw_args = {}
+        flat = {k: v for k, v in args.items() if k not in ("name", "tool_name")}
+        raw_args = flat if flat else {}
     if isinstance(raw_args, str):
         try:
             raw_args = json.loads(raw_args)
@@ -1042,6 +1072,11 @@ def resolve_underlying_call(args: Dict[str, Any]) -> Tuple[Optional[str], Dict[s
     if not isinstance(raw_args, dict):
         return None, {}, "tool_call 'arguments' must be an object"
     if not is_deferrable_tool_name(name):
+        if " " in name or name.startswith(("fool ", "hermes ")):
+            return None, {}, (
+                f"'{name}' is not a deferrable tool. If this is a shell command, run it using the "
+                f"'terminal' tool instead: terminal(command={name!r})"
+            )
         return None, {}, (
             f"'{name}' is not a deferrable tool. If it appears in the model-facing tools "
             "list already, call it directly instead of via tool_call."
